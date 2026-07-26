@@ -15,6 +15,7 @@ export type GameAction =
   | { type: 'develop'; playerId: PlayerId; industryType: IndustryType; cardId: CardId }
   | { type: 'sell'; playerId: PlayerId; tileIds: TileId[] }
   | { type: 'loan'; playerId: PlayerId }
-  | { type: 'endTurn'; playerId: PlayerId };
+  | { type: 'endTurn'; playerId: PlayerId }
+  | { type: 'startNextEra' };
 
 export type ActionResult = { ok: true; state: GameState } | { ok: false; error: string; state: GameState };

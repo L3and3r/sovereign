@@ -208,15 +208,33 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]['id'];
 
-function EraEndSummary({ state }: { state: GameState }) {
+function EraEndSummary({
+  state,
+  onStartNextEra,
+  onNewGame,
+}: {
+  state: GameState;
+  onStartNextEra: () => void;
+  onNewGame: () => void;
+}) {
+  const isTransition = state.phase === 'eraTransition';
+  const winnerId = !isTransition
+    ? state.players.reduce((best, p) => {
+        const total = state.finalScores?.[p.id]?.total ?? 0;
+        const bestTotal = state.finalScores?.[best.id]?.total ?? 0;
+        return total > bestTotal ? p : best;
+      }, state.players[0]!).id
+    : null;
+
   return (
     <main className="page" style={{ maxWidth: 520 }}>
       <h1 className="app-title" style={{ marginBottom: '1.5rem' }}>
-        <span className="mark">◆</span> PIONIERSFASE VOLTOOID
+        <span className="mark">◆</span> {isTransition ? 'PIONIERSFASE VOLTOOID' : 'NETWERKFASE VOLTOOID — EINDSTAND'}
       </h1>
       <div className="panel">
         {state.players.map((p, i) => {
-          const score = state.finalScores?.[p.id];
+          const industryScore = state.eraScores?.pioniersfase?.[p.id];
+          const finalScore = state.finalScores?.[p.id];
           return (
             <div
               key={p.id}
@@ -226,6 +244,7 @@ function EraEndSummary({ state }: { state: GameState }) {
                 justifyContent: 'space-between',
                 padding: '0.6rem 0',
                 borderBottom: '1px solid var(--border)',
+                opacity: winnerId && winnerId !== p.id ? 0.7 : 1,
               }}
             >
               <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -233,15 +252,30 @@ function EraEndSummary({ state }: { state: GameState }) {
                   {p.name.charAt(0).toUpperCase()}
                 </span>
                 {p.name}
+                {winnerId === p.id && <span style={{ color: 'var(--accent)' }}>&nbsp;★</span>}
               </span>
-              <span style={{ fontFamily: 'var(--font-display)', color: 'var(--text-muted)' }}>
-                tegels {score?.flippedVp ?? 0} + links {score?.linkVp ?? 0} ={' '}
-                <strong style={{ color: 'var(--accent)' }}>{score?.total ?? 0} VP</strong>
-              </span>
+              {isTransition ? (
+                <span style={{ fontFamily: 'var(--font-display)', color: 'var(--text-muted)' }}>
+                  tegels <strong style={{ color: 'var(--accent)' }}>{industryScore?.flippedVp ?? 0} VP</strong> · links
+                  tellen mee bij het spel-einde
+                </span>
+              ) : (
+                <span style={{ fontFamily: 'var(--font-display)', color: 'var(--text-muted)' }}>
+                  tegels {finalScore?.flippedVp ?? 0} + links {finalScore?.linkVp ?? 0} ={' '}
+                  <strong style={{ color: 'var(--accent)' }}>{finalScore?.total ?? 0} VP</strong>
+                </span>
+              )}
             </div>
           );
         })}
       </div>
+      <button
+        className="btn btn-primary"
+        style={{ marginTop: '1.5rem' }}
+        onClick={isTransition ? onStartNextEra : onNewGame}
+      >
+        {isTransition ? 'Start Netwerkfase' : 'Nieuw spel'}
+      </button>
     </main>
   );
 }
@@ -252,6 +286,7 @@ export default function GamePage() {
   const lastError = useGameStore((s) => s.lastError);
   const dispatchAction = useGameStore((s) => s.dispatchAction);
   const loadFromStorage = useGameStore((s) => s.loadFromStorage);
+  const resetGame = useGameStore((s) => s.resetGame);
 
   const [activeTab, setActiveTab] = useState<TabId>('build');
 
@@ -335,8 +370,17 @@ export default function GamePage() {
     );
   }
 
-  if (gameState.phase === 'eraEnded') {
-    return <EraEndSummary state={gameState} />;
+  if (gameState.phase === 'eraTransition' || gameState.phase === 'gameEnded') {
+    return (
+      <EraEndSummary
+        state={gameState}
+        onStartNextEra={() => dispatchAction({ type: 'startNextEra' })}
+        onNewGame={() => {
+          resetGame();
+          router.push('/');
+        }}
+      />
+    );
   }
 
   const currentPlayer = gameState.players[gameState.currentPlayerIndex]!;
@@ -415,7 +459,9 @@ export default function GamePage() {
           <button className="tutorial-restart-btn" onClick={restartTutorial}>
             Tutorial
           </button>
-          <span style={{ fontFamily: 'var(--font-display)', color: 'var(--text-muted)', fontSize: '0.75rem' }}>PIONIERSFASE</span>
+          <span style={{ fontFamily: 'var(--font-display)', color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+            {gameState.era === 'pioniersfase' ? 'PIONIERSFASE' : 'NETWERKFASE'}
+          </span>
         </div>
       </header>
 

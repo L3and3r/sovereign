@@ -4,13 +4,17 @@ import type { IndustryTileInstance } from './industry';
 import type { MarketState } from './market';
 import type { PlayerState } from './player';
 
-export type Era = 'pioniersfase';
-export type GamePhase = 'playing' | 'eraEnded';
+export type Era = 'pioniersfase' | 'netwerkfase';
+export type GamePhase = 'playing' | 'eraTransition' | 'gameEnded';
 
 export interface EraFinalScore {
   flippedVp: number;
   linkVp: number;
   total: number;
+}
+
+export interface EraIndustryScore {
+  flippedVp: number;
 }
 
 export interface GameState {
@@ -26,5 +30,6 @@ export interface GameState {
   market: MarketState;
   roundNumber: number;
   phase: GamePhase;
+  eraScores?: Partial<Record<Era, Record<PlayerId, EraIndustryScore>>>;
   finalScores?: Record<PlayerId, EraFinalScore>;
 }

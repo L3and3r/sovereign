@@ -4,7 +4,7 @@ import { createInitialState } from '../src/engine/createGame';
 import { dispatch } from '../src/engine/reducer';
 import type { GameState } from '../src/types/state';
 
-const MAX_ITERATIONS = 5000;
+const MAX_ITERATIONS = 10000;
 
 /**
  * Minimal rule-following bot: build whatever a hand card allows if a slot is free and stock
@@ -15,8 +15,16 @@ function simulateRandomGame(seed: number, playerNames: string[]): { state: GameS
   let state = createInitialState(playerNames, seed);
   let iterations = 0;
 
-  while (state.phase === 'playing' && iterations < MAX_ITERATIONS) {
+  while ((state.phase === 'playing' || state.phase === 'eraTransition') && iterations < MAX_ITERATIONS) {
     iterations += 1;
+
+    if (state.phase === 'eraTransition') {
+      const result = dispatch(state, { type: 'startNextEra' });
+      if (!result.ok) throw new Error(`startNextEra unexpectedly failed: ${result.error}`);
+      state = result.state;
+      continue;
+    }
+
     const player = state.players[state.currentPlayerIndex]!;
 
     if (state.actionsTakenThisTurn >= 2) {
@@ -148,7 +156,7 @@ describe('headless randomized game simulation', () => {
       const { state, iterations } = simulateRandomGame(seed, ['Alice', 'Bob']);
 
       expect(iterations).toBeLessThan(MAX_ITERATIONS);
-      expect(state.phase).toBe('eraEnded');
+      expect(state.phase).toBe('gameEnded');
       expect(state.finalScores).toBeDefined();
       for (const player of state.players) {
         expect(state.finalScores![player.id]).toBeDefined();
@@ -160,7 +168,7 @@ describe('headless randomized game simulation', () => {
   it('also terminates correctly with 4 players', () => {
     const { state, iterations } = simulateRandomGame(42, ['Alice', 'Bob', 'Cara', 'Dave']);
     expect(iterations).toBeLessThan(MAX_ITERATIONS);
-    expect(state.phase).toBe('eraEnded');
+    expect(state.phase).toBe('gameEnded');
     expect(state.players).toHaveLength(4);
   });
 });

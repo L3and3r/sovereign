@@ -67,11 +67,11 @@ describe('applyEndTurn', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
-    expect(result.state.phase).toBe('eraEnded');
-    // handelspost level 2 = 5 VP (see industries.data.ts), + 1 link VP = 6
-    expect(result.state.finalScores!.p1).toEqual({ flippedVp: 5, linkVp: 1, total: 6 });
+    expect(result.state.phase).toBe('eraTransition');
+    // handelspost level 2 = 5 VP (see industries.data.ts); link VP is only tallied at game end.
+    expect(result.state.eraScores!.pioniersfase!.p1).toEqual({ flippedVp: 5 });
     const p1 = result.state.players.find((p) => p.id === 'p1')!;
-    expect(p1.vp).toBe(6);
+    expect(p1.vp).toBe(5);
     const p2 = result.state.players.find((p) => p.id === 'p2')!;
     expect(p2.vp).toBe(0);
   });
@@ -83,7 +83,7 @@ describe('applyEndTurn', () => {
   });
 
   it('rejects ending the turn once the era has already ended', () => {
-    const state = patchState(makeTestState(), { phase: 'eraEnded' });
+    const state = patchState(makeTestState(), { phase: 'eraTransition' });
     const result = applyEndTurn(state, { type: 'endTurn', playerId: 'p1' });
     expect(result.ok).toBe(false);
     if (result.ok) return;

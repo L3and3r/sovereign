@@ -5,6 +5,7 @@ import { applyDevelop } from './actions/develop';
 import { applyLoan } from './actions/loan';
 import { applyNetwork } from './actions/network';
 import { applySell } from './actions/sell';
+import { applyStartNextEra } from './actions/startNextEra';
 import { applyEndTurn } from './turn';
 
 export function dispatch(state: GameState, action: GameAction): ActionResult {
@@ -21,6 +22,8 @@ export function dispatch(state: GameState, action: GameAction): ActionResult {
       return applyLoan(state, action);
     case 'endTurn':
       return applyEndTurn(state, action);
+    case 'startNextEra':
+      return applyStartNextEra(state, action);
     default: {
       const exhaustive: never = action;
       throw new Error(`Unhandled action: ${JSON.stringify(exhaustive)}`);

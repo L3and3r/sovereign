@@ -1,7 +1,7 @@
 import { STARTING_HAND_SIZE, incomeTrackValueForPosition } from '../data/market.data';
 import type { ActionResult, GameAction } from '../types/actions';
 import type { GameState } from '../types/state';
-import { scoreEra } from './era';
+import { endNetwerkfase, endPioniersfase } from './era';
 
 type EndTurnAction = Extract<GameAction, { type: 'endTurn' }>;
 
@@ -24,7 +24,9 @@ export function applyEndTurn(state: GameState, action: EndTurnAction): ActionRes
   // Brass Birmingham; requiring every hand to also empty risked a stall once the board fills up).
   const eraShouldEnd = newDeck.length === 0;
   if (eraShouldEnd) {
-    return { ok: true, state: scoreEra({ ...state, players: playersAfterDraw, deck: newDeck }) };
+    const stateAfterDraw = { ...state, players: playersAfterDraw, deck: newDeck };
+    const scored = state.era === 'pioniersfase' ? endPioniersfase(stateAfterDraw) : endNetwerkfase(stateAfterDraw);
+    return { ok: true, state: scored };
   }
 
   const nextPlayerIndex = (state.currentPlayerIndex + 1) % state.players.length;
