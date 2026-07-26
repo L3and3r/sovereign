@@ -25,6 +25,16 @@ function simulateRandomGame(seed: number, playerNames: string[]): { state: GameS
       continue;
     }
 
+    if (state.pendingReaction) {
+      // Simplest bot behavior: always pass on Dreigingskaart reactions, same as the bot not
+      // needing real Sell/Develop strategy elsewhere in this simulation.
+      const reactingPlayerId = state.pendingReaction.eligiblePlayerIds[0]!;
+      const result = dispatch(state, { type: 'passReaction', playerId: reactingPlayerId });
+      if (!result.ok) throw new Error(`passReaction unexpectedly failed: ${result.error}`);
+      state = result.state;
+      continue;
+    }
+
     const player = state.players[state.currentPlayerIndex]!;
 
     if (state.actionsTakenThisTurn >= 2) {

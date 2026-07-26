@@ -32,4 +32,5 @@ export interface GameState {
   phase: GamePhase;
   eraScores?: Partial<Record<Era, Record<PlayerId, EraIndustryScore>>>;
   finalScores?: Record<PlayerId, EraFinalScore>;
+  pendingReaction?: { triggerPlayerId: PlayerId; eligiblePlayerIds: PlayerId[] };
 }

@@ -16,6 +16,8 @@ export type GameAction =
   | { type: 'sell'; playerId: PlayerId; tileIds: TileId[] }
   | { type: 'loan'; playerId: PlayerId }
   | { type: 'endTurn'; playerId: PlayerId }
-  | { type: 'startNextEra' };
+  | { type: 'startNextEra' }
+  | { type: 'confiscate'; playerId: PlayerId; cardId: CardId; targetTileId: TileId }
+  | { type: 'passReaction'; playerId: PlayerId };
 
 export type ActionResult = { ok: true; state: GameState } | { ok: false; error: string; state: GameState };

@@ -33,6 +33,7 @@ export function applySell(state: GameState, action: SellAction): ActionResult {
       return fail(state, 'Alleen Handelspost- en Media & Educatie-tegels kunnen verkocht worden');
     }
     if (tile.flipped) return fail(state, 'Tegel is al verkocht');
+    if (tile.disabled) return fail(state, 'Tegel is buiten werking gesteld door een Dreigingskaart');
     tiles.push(tile);
   }
 
@@ -42,7 +43,7 @@ export function applySell(state: GameState, action: SellAction): ActionResult {
   }
 
   const hubTiles = state.tiles
-    .filter((t) => t.type === 'netwerkhub' && reachable.has(t.regionId) && (t.remainingOutput ?? 0) > 0)
+    .filter((t) => t.type === 'netwerkhub' && reachable.has(t.regionId) && !t.disabled && (t.remainingOutput ?? 0) > 0)
     .sort((a, b) => (a.remainingOutput ?? 0) - (b.remainingOutput ?? 0));
   const totalCapacity = hubTiles.reduce((sum, t) => sum + (t.remainingOutput ?? 0), 0);
   if (totalCapacity < tiles.length) return fail(state, 'Onvoldoende verbonden Netwerkhub-verkoopcapaciteit');
@@ -104,6 +105,8 @@ export function applySell(state: GameState, action: SellAction): ActionResult {
     return t;
   });
 
+  const otherPlayerIds = state.players.map((p) => p.id).filter((id) => id !== player.id);
+
   return {
     ok: true,
     state: {
@@ -119,6 +122,8 @@ export function applySell(state: GameState, action: SellAction): ActionResult {
         },
       },
       actionsTakenThisTurn: state.actionsTakenThisTurn + 1,
+      pendingReaction:
+        otherPlayerIds.length > 0 ? { triggerPlayerId: player.id, eligiblePlayerIds: otherPlayerIds } : undefined,
     },
   };
 }

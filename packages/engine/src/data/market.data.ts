@@ -32,6 +32,8 @@ export const LOAN_POOL_SIZE = 30;
 
 export const LINK_VP = 1;
 
+export const CONFISCATE_INCOME_PENALTY = 2;
+
 export const STARTING_SATS = 30;
 export const STARTING_INCOME_POSITION = 10;
 export const STARTING_HAND_SIZE = 8;

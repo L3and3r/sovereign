@@ -5,6 +5,8 @@ import { INDUSTRIES } from '../src/data/industries.data';
 import {
   ALL_CARD_DEFS,
   buildDeckCardIds,
+  DREIGING_CARD_COPIES,
+  DREIGING_CARDS,
   INDUSTRY_CARD_COPIES,
   INDUSTRY_CARDS,
   REGION_CARD_COPIES,
@@ -111,7 +113,9 @@ describe('cards', () => {
   it('builds a deck matching the declared copy formula', () => {
     const deck = buildDeckCardIds();
     const expectedLength =
-      REGION_CARDS.length * REGION_CARD_COPIES + INDUSTRY_CARDS.length * INDUSTRY_CARD_COPIES;
+      REGION_CARDS.length * REGION_CARD_COPIES +
+      INDUSTRY_CARDS.length * INDUSTRY_CARD_COPIES +
+      DREIGING_CARDS.length * DREIGING_CARD_COPIES;
     expect(deck).toHaveLength(expectedLength);
   });
 });

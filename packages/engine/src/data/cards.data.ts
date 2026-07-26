@@ -123,11 +123,46 @@ export const WILDCARD_INDUSTRY_CARD: CardDef = {
   },
 };
 
+const DREIGING_DEFS: Array<{ id: string; flavorName: string; quote: CardQuote }> = [
+  {
+    id: 'card-dreiging-onteigeningsbevel',
+    flavorName: 'Onteigeningsbevel',
+    quote: {
+      text: 'We are fast approaching the stage of the ultimate inversion: the stage where the government is free to do anything it pleases, while the citizens may act only by permission.',
+      author: 'Ayn Rand',
+    },
+  },
+  {
+    id: 'card-dreiging-belastingcontrole',
+    flavorName: 'Belastingcontrole',
+    quote: {
+      text: 'Nothing is so permanent as a temporary government program.',
+      author: 'Milton Friedman',
+    },
+  },
+  {
+    id: 'card-dreiging-vrijwillige-slavernij',
+    flavorName: 'Vrijwillige Slavernij',
+    quote: {
+      text: 'It is therefore the inhabitants themselves who permit, or, rather, bring about, their own subjection, since by ceasing to submit they would put an end to it.',
+      author: 'Étienne de la Boétie',
+    },
+  },
+];
+
+export const DREIGING_CARDS: CardDef[] = DREIGING_DEFS.map((def) => ({
+  id: def.id,
+  type: 'dreiging',
+  flavorName: def.flavorName,
+  quote: def.quote,
+}));
+
 export const ALL_CARD_DEFS: CardDef[] = [
   ...REGION_CARDS,
   ...INDUSTRY_CARDS,
   WILDCARD_REGION_CARD,
   WILDCARD_INDUSTRY_CARD,
+  ...DREIGING_CARDS,
 ];
 
 export const CARD_DEFS_BY_ID: Record<CardId, CardDef> = Object.fromEntries(
@@ -136,6 +171,7 @@ export const CARD_DEFS_BY_ID: Record<CardId, CardDef> = Object.fromEntries(
 
 export const REGION_CARD_COPIES = 3;
 export const INDUSTRY_CARD_COPIES = 3;
+export const DREIGING_CARD_COPIES = 2;
 
 export function buildDeckCardIds(): CardId[] {
   const ids: CardId[] = [];
@@ -144,6 +180,9 @@ export function buildDeckCardIds(): CardId[] {
   }
   for (const card of INDUSTRY_CARDS) {
     for (let i = 0; i < INDUSTRY_CARD_COPIES; i += 1) ids.push(card.id);
+  }
+  for (const card of DREIGING_CARDS) {
+    for (let i = 0; i < DREIGING_CARD_COPIES; i += 1) ids.push(card.id);
   }
   return ids;
 }

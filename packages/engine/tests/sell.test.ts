@@ -45,6 +45,9 @@ describe('applySell', () => {
     expect(hub.flipped).toBe(false);
 
     expect(result.state.market.handelspostDemand.nextIndex).toBe(1);
+
+    // A successful Sell opens a reaction window for every other player.
+    expect(result.state.pendingReaction).toEqual({ triggerPlayerId: 'p1', eligiblePlayerIds: ['p2'] });
   });
 
   it('fully depletes and flips the netwerkhub tile once its capacity reaches zero', () => {
@@ -156,5 +159,31 @@ describe('applySell', () => {
     const state = stateWithHandelspostAndHub();
     const result = applySell(state, { type: 'sell', playerId: 'p2', tileIds: ['tile-hp'] });
     expect(result.ok).toBe(false);
+  });
+
+  it('rejects selling a tile disabled by a Dreigingskaart', () => {
+    const state = patchState(stateWithHandelspostAndHub(), {
+      tiles: [
+        tile({ id: 'tile-hp', type: 'handelspost', regionId: 'zoutmeer-vrijhaven', disabled: true }),
+        tile({ id: 'tile-hub', type: 'netwerkhub', regionId: 'berghold', ownerId: 'p2', remainingOutput: 2 }),
+      ],
+    });
+    const result = applySell(state, { type: 'sell', playerId: 'p1', tileIds: ['tile-hp'] });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error).toMatch(/buiten werking gesteld/);
+  });
+
+  it('does not count a disabled Netwerkhub toward sale capacity', () => {
+    const state = patchState(stateWithHandelspostAndHub(), {
+      tiles: [
+        tile({ id: 'tile-hp', type: 'handelspost', regionId: 'zoutmeer-vrijhaven' }),
+        tile({ id: 'tile-hub', type: 'netwerkhub', regionId: 'berghold', ownerId: 'p2', remainingOutput: 2, disabled: true }),
+      ],
+    });
+    const result = applySell(state, { type: 'sell', playerId: 'p1', tileIds: ['tile-hp'] });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error).toMatch(/Netwerkhub-verkoopcapaciteit/);
   });
 });

@@ -45,4 +45,5 @@ export interface IndustryTileInstance {
   slotId: SlotId;
   remainingOutput?: number;
   flipped: boolean;
+  disabled?: boolean;
 }

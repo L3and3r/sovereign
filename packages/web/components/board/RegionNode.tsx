@@ -64,7 +64,7 @@ export function RegionNode({
           >
             {tile ? (
               <>
-                <IndustryTileIcon type={tile.type} level={tile.level} flipped={tile.flipped} />
+                <IndustryTileIcon type={tile.type} level={tile.level} flipped={tile.flipped} disabled={tile.disabled} />
                 {isSelectableTile && (
                   <circle r={15} fill="none" stroke="#f7931a" strokeWidth={2} strokeDasharray="3 2" />
                 )}

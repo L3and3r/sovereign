@@ -142,6 +142,15 @@ function networkTargetsForCard(state: GameState, player: PlayerState, cardId: st
   return ids;
 }
 
+function confiscateTargetsForOwner(state: GameState, ownerId: string): Set<string> {
+  const protectedRegionIds = new Set(
+    state.tiles.filter((t) => t.type === 'kluis' && t.ownerId === ownerId).map((t) => t.regionId),
+  );
+  return new Set(
+    state.tiles.filter((t) => t.ownerId === ownerId && !t.disabled && !protectedRegionIds.has(t.regionId)).map((t) => t.id),
+  );
+}
+
 function IndustryTypeButton({
   type,
   active,
@@ -207,6 +216,114 @@ const TABS = [
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
+
+function ReactionWindow({
+  state,
+  dispatchAction,
+}: {
+  state: GameState;
+  dispatchAction: (action: GameAction) => void;
+}) {
+  const pendingReaction = state.pendingReaction!;
+  const reactingPlayer = state.players.find((p) => p.id === pendingReaction.eligiblePlayerIds[0])!;
+  const seller = state.players.find((p) => p.id === pendingReaction.triggerPlayerId)!;
+
+  const [cardId, setCardId] = useState<string | null>(null);
+  const [targetTileId, setTargetTileId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setCardId(null);
+    setTargetTileId(null);
+  }, [reactingPlayer.id]);
+
+  const dreigingCardIds = new Set(reactingPlayer.hand.filter((id) => CARD_DEFS_BY_ID[id]?.type === 'dreiging'));
+  const targets = cardId ? confiscateTargetsForOwner(state, seller.id) : new Set<string>();
+  const confiscateAction: GameAction | null =
+    cardId && targetTileId ? { type: 'confiscate', playerId: reactingPlayer.id, cardId, targetTileId } : null;
+
+  function pass() {
+    dispatchAction({ type: 'passReaction', playerId: reactingPlayer.id });
+  }
+
+  function confiscate() {
+    if (!confiscateAction) return;
+    dispatchAction(confiscateAction);
+  }
+
+  return (
+    <main className="page">
+      <header className="app-header">
+        <h1 className="app-title">
+          <span className="mark">◆</span> SOVEREIGN
+        </h1>
+      </header>
+
+      <div className="panel" style={{ marginBottom: '1.25rem', borderColor: 'var(--accent)' }}>
+        <p className="panel-title" style={{ color: 'var(--accent)' }}>
+          Reactievenster
+        </p>
+        <p style={{ fontSize: '0.9rem' }}>
+          {seller.name} heeft verkocht. <strong>{reactingPlayer.name}</strong>, wil je een Dreigingskaart spelen
+          tegen een tegel van {seller.name}?
+        </p>
+      </div>
+
+      <div className="game-grid">
+        <div className="panel">
+          <BoardSvg
+            state={state}
+            selectableTileIds={cardId ? targets : undefined}
+            selectedTileIds={targetTileId ? new Set([targetTileId]) : undefined}
+            onTileClick={cardId ? (tileId) => setTargetTileId(tileId) : undefined}
+          />
+          <div style={{ marginTop: '0.85rem' }}>
+            <IndustryLegend />
+          </div>
+        </div>
+
+        <div className="stack">
+          <div className="panel">
+            <PlayerHandPanel
+              player={reactingPlayer}
+              selectedCardId={cardId}
+              playableCardIds={dreigingCardIds}
+              onSelectCard={(id) => {
+                setCardId(id);
+                setTargetTileId(null);
+              }}
+            />
+          </div>
+
+          <div className="panel stack">
+            {dreigingCardIds.size === 0 && (
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                Geen Dreigingskaart op de hand van {reactingPlayer.name}.
+              </p>
+            )}
+            {cardId && targets.size === 0 && (
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                Alle tegels van {seller.name} zijn beschermd door een Kluis of al buiten werking gesteld.
+              </p>
+            )}
+            {cardId && targetTileId && (
+              <div>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
+                  Doelwit stelt de tegel buiten werking en kost {seller.name} 2 inkomenspositie.
+                </p>
+                <button className="btn btn-primary" onClick={confiscate}>
+                  Confisqueer
+                </button>
+              </div>
+            )}
+            <button className="btn" onClick={pass}>
+              Niets doen
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
 
 function EraEndSummary({
   state,
@@ -381,6 +498,10 @@ export default function GamePage() {
         }}
       />
     );
+  }
+
+  if (gameState.pendingReaction) {
+    return <ReactionWindow state={gameState} dispatchAction={dispatchAction} />;
   }
 
   const currentPlayer = gameState.players[gameState.currentPlayerIndex]!;

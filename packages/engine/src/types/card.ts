@@ -1,7 +1,7 @@
 import type { CardId, RegionId } from './ids';
 import type { IndustryType } from './industry';
 
-export type CardType = 'region' | 'industry' | 'wildcardRegion' | 'wildcardIndustry';
+export type CardType = 'region' | 'industry' | 'wildcardRegion' | 'wildcardIndustry' | 'dreiging';
 
 export interface CardQuote {
   text: string;

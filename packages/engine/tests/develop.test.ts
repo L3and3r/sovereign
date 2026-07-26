@@ -3,6 +3,13 @@ import { applyDevelop } from '../src/engine/actions/develop';
 import type { GameAction } from '../src/types/actions';
 import { giveCard, makeTestState, patchPlayer } from './fixtures/makeTestState';
 
+/** Ensures the starting hand doesn't already happen to contain this card id from the shuffled
+ * deck, so tests can reason about exactly one copy being present (or none). */
+function withoutCard(state: ReturnType<typeof makeTestState>, playerId: string, cardId: string) {
+  const player = state.players.find((p) => p.id === playerId)!;
+  return patchPlayer(state, playerId, { hand: player.hand.filter((id) => id !== cardId) });
+}
+
 function developAction(overrides: Partial<Extract<GameAction, { type: 'develop' }>> = {}) {
   return {
     type: 'develop' as const,
@@ -15,7 +22,7 @@ function developAction(overrides: Partial<Extract<GameAction, { type: 'develop' 
 
 describe('applyDevelop', () => {
   it('discards the given card and skips exactly the next stock level, paying energy via the fallback market', () => {
-    const state = giveCard(makeTestState(), 'p1', 'card-industry-handelspost');
+    const state = giveCard(withoutCard(makeTestState(), 'p1', 'card-industry-handelspost'), 'p1', 'card-industry-handelspost');
     const result = applyDevelop(state, developAction());
 
     expect(result.ok).toBe(true);
@@ -39,7 +46,7 @@ describe('applyDevelop', () => {
   });
 
   it('rejects when the card is not in hand', () => {
-    const state = makeTestState();
+    const state = withoutCard(makeTestState(), 'p1', 'card-industry-handelspost');
     const result = applyDevelop(state, developAction({ cardId: 'card-industry-handelspost' }));
     expect(result.ok).toBe(false);
     if (result.ok) return;
