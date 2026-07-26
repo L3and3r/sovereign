@@ -1,3 +1,4 @@
+import { pickAutomaAction, pickAutomaReaction } from '../../src/automa/automa';
 import { CARD_DEFS_BY_ID } from '../../src/data/cards.data';
 import { createInitialState } from '../../src/engine/createGame';
 import { dispatch } from '../../src/engine/reducer';
@@ -199,8 +200,16 @@ export function simulateGame(
   seed: number,
   playerNames: string[],
   playerConfigs: BotConfig[],
+  automa?: { playerIndex: number; config: import('../../src/automa/automaConfig').AutomaConfig },
 ): SimulationResult {
   let state = createInitialState(playerNames, seed);
+  if (automa) {
+    const target = state.players[automa.playerIndex]!;
+    state = {
+      ...state,
+      players: state.players.map((p) => (p.id === target.id ? { ...p, isAutoma: true, automaConfig: automa.config } : p)),
+    };
+  }
   let iterations = 0;
 
   const actionCounts: Record<PlayerId, Record<BotActionKind, number>> = {};
@@ -220,8 +229,12 @@ export function simulateGame(
 
     if (state.pendingReaction) {
       const reactingPlayerId = state.pendingReaction.eligiblePlayerIds[0]!;
-      const result = dispatch(state, { type: 'passReaction', playerId: reactingPlayerId });
-      if (!result.ok) throw new Error(`passReaction unexpectedly failed: ${result.error}`);
+      const reactingPlayer = state.players.find((p) => p.id === reactingPlayerId)!;
+      const reactionAction = reactingPlayer.isAutoma
+        ? pickAutomaReaction(state, reactingPlayerId)
+        : ({ type: 'passReaction', playerId: reactingPlayerId } as const);
+      const result = dispatch(state, reactionAction);
+      if (!result.ok) throw new Error(`${reactionAction.type} unexpectedly failed: ${result.error}`);
       state = result.state;
       continue;
     }
@@ -229,19 +242,30 @@ export function simulateGame(
     const playerIndex = state.currentPlayerIndex;
     const player = state.players[playerIndex]!;
     const config = playerConfigs[playerIndex] ?? playerConfigs[0]!;
+    const actionBudget = player.automaConfig?.actionsPerTurn ?? 2;
 
-    if (state.actionsTakenThisTurn >= 2) {
+    if (state.actionsTakenThisTurn >= actionBudget) {
       const result = dispatch(state, { type: 'endTurn', playerId: player.id });
       if (!result.ok) throw new Error(`endTurn unexpectedly failed: ${result.error}`);
       state = result.state;
       continue;
     }
 
-    const action = playOneAction(state, player.id, config);
-    if (action) {
-      state = action.result.state;
-      actionCounts[player.id]![action.kind] += 1;
-      continue;
+    if (player.isAutoma) {
+      const automaAction = pickAutomaAction(state, player.id);
+      if (automaAction) {
+        const result = dispatch(state, automaAction);
+        if (!result.ok) throw new Error(`automa action unexpectedly failed: ${result.error}`);
+        state = result.state;
+        continue;
+      }
+    } else {
+      const action = playOneAction(state, player.id, config);
+      if (action) {
+        state = action.result.state;
+        actionCounts[player.id]![action.kind] += 1;
+        continue;
+      }
     }
 
     const endResult = dispatch(state, { type: 'endTurn', playerId: player.id });

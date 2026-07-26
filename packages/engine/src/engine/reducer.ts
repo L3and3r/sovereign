@@ -1,5 +1,6 @@
 import type { ActionResult, GameAction } from '../types/actions';
 import type { GameState } from '../types/state';
+import { applyAutomaUndercut } from './actions/automaUndercut';
 import { applyBuild } from './actions/build';
 import { applyConfiscate } from './actions/confiscate';
 import { applyDevelop } from './actions/develop';
@@ -34,6 +35,8 @@ export function dispatch(state: GameState, action: GameAction): ActionResult {
       return applyConfiscate(state, action);
     case 'passReaction':
       return applyPassReaction(state, action);
+    case 'automaUndercut':
+      return applyAutomaUndercut(state, action);
     default: {
       const exhaustive: never = action;
       throw new Error(`Unhandled action: ${JSON.stringify(exhaustive)}`);

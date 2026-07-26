@@ -1,3 +1,4 @@
+import type { AutomaConfig } from '../automa/automaConfig';
 import type { CardId, PlayerId } from './ids';
 import type { IndustryLevel, IndustryType } from './industry';
 
@@ -13,4 +14,6 @@ export interface PlayerState {
   hand: CardId[];
   wildcardsAvailable: { region: boolean; industry: boolean };
   industryStock: Record<IndustryType, IndustryLevel[]>;
+  isAutoma?: boolean;
+  automaConfig?: AutomaConfig;
 }

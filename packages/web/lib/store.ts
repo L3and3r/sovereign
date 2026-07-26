@@ -1,7 +1,14 @@
 'use client';
 
 import { create } from 'zustand';
-import { createInitialState, dispatch, type GameAction, type GameState } from '@sovereign/engine';
+import {
+  createAutomaConfig,
+  createInitialState,
+  dispatch,
+  type AutomaDifficulty,
+  type GameAction,
+  type GameState,
+} from '@sovereign/engine';
 
 const STORAGE_KEY = 'sovereign-game-state';
 
@@ -9,6 +16,7 @@ interface GameStore {
   gameState: GameState | null;
   lastError: string | null;
   startGame: (playerNames: string[]) => void;
+  startSoloGame: (humanName: string, difficulty: AutomaDifficulty) => void;
   dispatchAction: (action: GameAction) => void;
   loadFromStorage: () => void;
   resetGame: () => void;
@@ -29,6 +37,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   startGame: (playerNames) => {
     const state = createInitialState(playerNames);
+    persist(state);
+    set({ gameState: state, lastError: null });
+  },
+
+  startSoloGame: (humanName, difficulty) => {
+    const seed = Date.now();
+    const initial = createInitialState([humanName, 'Automa'], seed);
+    const automaConfig = createAutomaConfig(difficulty, seed);
+    const state: GameState = {
+      ...initial,
+      players: initial.players.map((p, i) => (i === 1 ? { ...p, isAutoma: true, automaConfig } : p)),
+    };
     persist(state);
     set({ gameState: state, lastError: null });
   },

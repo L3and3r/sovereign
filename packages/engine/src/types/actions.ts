@@ -18,6 +18,7 @@ export type GameAction =
   | { type: 'endTurn'; playerId: PlayerId }
   | { type: 'startNextEra' }
   | { type: 'confiscate'; playerId: PlayerId; cardId: CardId; targetTileId: TileId }
-  | { type: 'passReaction'; playerId: PlayerId };
+  | { type: 'passReaction'; playerId: PlayerId }
+  | { type: 'automaUndercut'; playerId: PlayerId };
 
 export type ActionResult = { ok: true; state: GameState } | { ok: false; error: string; state: GameState };

@@ -5,6 +5,8 @@ import {
   INDUSTRY_TYPES,
   MAP_EDGES,
   dispatch,
+  pickAutomaAction,
+  pickAutomaReaction,
   type GameAction,
   type GameState,
   type IndustryType,
@@ -65,7 +67,10 @@ function PlayerRoster({ state }: { state: GameState }) {
             {p.name.charAt(0).toUpperCase()}
           </span>
           <div>
-            <div style={{ fontSize: '0.85rem', fontWeight: i === state.currentPlayerIndex ? 700 : 400 }}>{p.name}</div>
+            <div style={{ fontSize: '0.85rem', fontWeight: i === state.currentPlayerIndex ? 700 : 400 }}>
+              {p.name}
+              {p.isAutoma && <span title="Automa"> 🤖</span>}
+            </div>
             <div className="resource-row">
               <span className="resource-crystal">
                 <span className="gem" style={{ background: RESOURCE_GEMS.sats }} />
@@ -443,6 +448,34 @@ export default function GamePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Drives the Automa's turns and reactions one step at a time. Re-fires automatically after
+  // every dispatch (gameState changes identity), so a full Automa turn plays out as a short
+  // sequence of visible moves rather than one instant jump - not an "AI thinks" delay, just enough
+  // pacing to follow along (game-concept.md §14).
+  useEffect(() => {
+    if (!gameState || gameState.phase !== 'playing') return undefined;
+
+    let action: GameAction | null = null;
+    if (gameState.pendingReaction) {
+      const reactingPlayer = gameState.players.find((p) => p.id === gameState.pendingReaction!.eligiblePlayerIds[0]);
+      if (reactingPlayer?.isAutoma) action = pickAutomaReaction(gameState, reactingPlayer.id);
+    } else {
+      const current = gameState.players[gameState.currentPlayerIndex]!;
+      if (current.isAutoma) {
+        const budget = current.automaConfig?.actionsPerTurn ?? 2;
+        action =
+          gameState.actionsTakenThisTurn >= budget
+            ? { type: 'endTurn', playerId: current.id }
+            : (pickAutomaAction(gameState, current.id) ?? { type: 'endTurn', playerId: current.id });
+      }
+    }
+
+    if (!action) return undefined;
+    const readyAction = action;
+    const timer = setTimeout(() => dispatchAction(readyAction), 500);
+    return () => clearTimeout(timer);
+  }, [gameState, dispatchAction]);
+
   function advanceTutorialIfOnStep(step: number) {
     setTutorialStep((current) => (tutorialActive && current === step ? step + 1 : current));
   }
@@ -501,7 +534,12 @@ export default function GamePage() {
   }
 
   if (gameState.pendingReaction) {
-    return <ReactionWindow state={gameState} dispatchAction={dispatchAction} />;
+    const reactingPlayer = gameState.players.find((p) => p.id === gameState.pendingReaction!.eligiblePlayerIds[0]);
+    if (!reactingPlayer?.isAutoma) {
+      return <ReactionWindow state={gameState} dispatchAction={dispatchAction} />;
+    }
+    // Automa reactions resolve silently via the effect above; fall through to the normal board
+    // so the human isn't shown a UI meant for a human reactor.
   }
 
   const currentPlayer = gameState.players[gameState.currentPlayerIndex]!;

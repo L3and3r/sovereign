@@ -26,3 +26,6 @@ export * from './engine/era';
 
 export * from './selectors/player';
 export * from './selectors/network';
+
+export * from './automa/automaConfig';
+export * from './automa/automa';
