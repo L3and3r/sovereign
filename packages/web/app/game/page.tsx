@@ -3,15 +3,18 @@
 import {
   CARD_DEFS_BY_ID,
   INDUSTRY_TYPES,
+  MAP_EDGES,
   dispatch,
   type GameAction,
   type GameState,
   type IndustryType,
+  type MapEdgeDef,
   type PlayerState,
 } from '@sovereign/engine';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { BoardSvg } from '../../components/board/BoardSvg';
+import { IndustryIconPaths } from '../../components/board/IndustryIconPaths';
 import { IndustryLegend } from '../../components/board/IndustryLegend';
 import { PlayerHandPanel } from '../../components/hand/PlayerHandPanel';
 import { HelpPanel } from '../../components/layout/HelpPanel';
@@ -19,13 +22,7 @@ import { TurnBanner } from '../../components/layout/TurnBanner';
 import { DemandTrackView } from '../../components/market/DemandTrackView';
 import { IncomeTrackView } from '../../components/market/IncomeTrackView';
 import { useGameStore } from '../../lib/store';
-import { colorForPlayerIndex } from '../../styles/tokens';
-
-function cardLabel(cardId: string): string {
-  const def = CARD_DEFS_BY_ID[cardId];
-  if (!def) return cardId;
-  return `${def.flavorName} [${def.type}]`;
-}
+import { colorForPlayerIndex, INDUSTRY_COLORS } from '../../styles/tokens';
 
 /** Cost/outcome preview: calls the pure engine dispatch against the current state without
  * committing, and discards the result if the player doesn't confirm. */
@@ -33,7 +30,7 @@ function ActionPreview({ state, action }: { state: GameState; action: GameAction
   if (!action) return null;
   const result = dispatch(state, action);
   if (!result.ok) {
-    return <p className="preview-warn">Voorbeeld: {result.error}</p>;
+    return <p className="preview-warn">{result.error}</p>;
   }
   const playerId = 'playerId' in action ? action.playerId : undefined;
   const before = state.players.find((p) => p.id === playerId);
@@ -42,7 +39,7 @@ function ActionPreview({ state, action }: { state: GameState; action: GameAction
   const satsDelta = after.sats - before.sats;
   return (
     <p className="preview-ok">
-      Voorbeeld: sats {satsDelta >= 0 ? '+' : ''}
+      sats {satsDelta >= 0 ? '+' : ''}
       {satsDelta}, inkomenspositie {after.incomePosition >= before.incomePosition ? '+' : ''}
       {after.incomePosition - before.incomePosition}
     </p>
@@ -92,379 +89,84 @@ function PlayerRoster({ state }: { state: GameState }) {
   );
 }
 
-function cardUsableForBuild(cardId: string, regionId: string, industryType: string, player: PlayerState): boolean {
-  if (!player.hand.includes(cardId)) return false;
+/** For a given hand card, the empty board slots it can legally build into, keyed by
+ * "regionId:slotId", each mapped to the industry type(s) that slot+card combination allows. */
+function buildTargetsForCard(state: GameState, player: PlayerState, cardId: string): Map<string, IndustryType[]> {
   const def = CARD_DEFS_BY_ID[cardId];
-  if (!def) return false;
-  if (def.type === 'region') return def.regionId === regionId;
-  if (def.type === 'wildcardRegion') return player.wildcardsAvailable.region;
-  if (def.type === 'industry') return def.industryType === industryType;
-  if (def.type === 'wildcardIndustry') return player.wildcardsAvailable.industry;
-  return false;
-}
+  const targets = new Map<string, IndustryType[]>();
+  if (!def) return targets;
+  if (def.type === 'wildcardRegion' && !player.wildcardsAvailable.region) return targets;
+  if (def.type === 'wildcardIndustry' && !player.wildcardsAvailable.industry) return targets;
 
-function BuildForm({
-  state,
-  player,
-  dispatchAction,
-}: {
-  state: GameState;
-  player: PlayerState;
-  dispatchAction: (action: GameAction) => void;
-}) {
-  const [regionId, setRegionId] = useState(state.regions[0]?.id ?? '');
-  const [slotId, setSlotId] = useState('');
-  const [industryType, setIndustryType] = useState<IndustryType | ''>('');
-  const [cardId, setCardId] = useState('');
-  const region = state.regions.find((r) => r.id === regionId);
-  const slot = region?.slots.find((s) => s.id === slotId);
-  const allowedTypes = slot?.allowedTypes ?? [];
+  const impliedRegionId = def.type === 'region' ? def.regionId : null;
+  const impliedIndustryType = def.type === 'industry' ? def.industryType : null;
 
-  useEffect(() => {
-    setSlotId('');
-    setIndustryType('');
-    setCardId('');
-  }, [regionId]);
-
-  useEffect(() => {
-    if (!allowedTypes.includes(industryType as IndustryType)) {
-      setIndustryType(allowedTypes[0] ?? '');
+  for (const region of state.regions) {
+    if (impliedRegionId && region.id !== impliedRegionId) continue;
+    for (const slot of region.slots) {
+      if (slot.occupiedByTileId) continue;
+      const candidates = slot.allowedTypes.filter((t) => {
+        if (impliedIndustryType && t !== impliedIndustryType) return false;
+        return (player.industryStock[t]?.length ?? 0) > 0;
+      });
+      if (candidates.length > 0) targets.set(`${region.id}:${slot.id}`, candidates);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slotId]);
-
-  useEffect(() => {
-    if (cardId && !cardUsableForBuild(cardId, regionId, industryType, player)) {
-      setCardId('');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [industryType, regionId, player.hand]);
-
-  const usableCards = player.hand.filter((cid) => cardUsableForBuild(cid, regionId, industryType, player));
-
-  return (
-    <div className="stack">
-      <div className="form-row">
-        <label className="field">
-          Regio
-          <select className="select" value={regionId} onChange={(e) => setRegionId(e.target.value)}>
-            {state.regions.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.name}
-                {r.hasBorderMarker ? ' (grens)' : ''}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="field">
-          Slot
-          <select className="select" value={slotId} onChange={(e) => setSlotId(e.target.value)}>
-            <option value="">-- kies een leeg slot --</option>
-            {region?.slots.map((s) => (
-              <option key={s.id} value={s.id} disabled={!!s.occupiedByTileId}>
-                {s.id} ({s.allowedTypes.join('/')}){s.occupiedByTileId ? ' [bezet]' : ''}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="field">
-          Industrietype
-          <select
-            className="select"
-            value={industryType}
-            disabled={!slotId}
-            onChange={(e) => setIndustryType(e.target.value as IndustryType)}
-          >
-            {!slotId && <option value="">-- kies eerst een slot --</option>}
-            {allowedTypes.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="field">
-          Kaart
-          <select className="select" value={cardId} disabled={!industryType} onChange={(e) => setCardId(e.target.value)}>
-            <option value="">{!industryType ? '-- kies eerst een slot --' : '-- kies een passende kaart --'}</option>
-            {usableCards.map((cid, i) => (
-              <option key={`${cid}-${i}`} value={cid}>
-                {cardLabel(cid)}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-      <div>
-        <button
-          className="btn btn-primary"
-          disabled={!slotId || !cardId}
-          onClick={() =>
-            dispatchAction({
-              type: 'build',
-              playerId: player.id,
-              regionId,
-              slotId,
-              industryType: industryType as IndustryType,
-              cardId,
-            })
-          }
-        >
-          Bouw
-        </button>
-        <ActionPreview
-          state={state}
-          action={
-            slotId && cardId
-              ? { type: 'build', playerId: player.id, regionId, slotId, industryType: industryType as IndustryType, cardId }
-              : null
-          }
-        />
-      </div>
-    </div>
-  );
-}
-
-function cardUsableForNetwork(cardId: string, regionA: string, regionB: string, player: PlayerState): boolean {
-  if (!player.hand.includes(cardId)) return false;
-  const def = CARD_DEFS_BY_ID[cardId];
-  if (!def) return false;
-  if (def.type === 'region') return def.regionId === regionA || def.regionId === regionB;
-  if (def.type === 'wildcardRegion') return player.wildcardsAvailable.region;
-  return false;
-}
-
-function NetworkForm({
-  state,
-  player,
-  dispatchAction,
-}: {
-  state: GameState;
-  player: PlayerState;
-  dispatchAction: (action: GameAction) => void;
-}) {
-  const [regionA, setRegionA] = useState(state.regions[0]?.id ?? '');
-  const [regionB, setRegionB] = useState('');
-  const [cardId, setCardId] = useState('');
-  const regionAObj = state.regions.find((r) => r.id === regionA);
-  const alreadyLinkedIds = new Set(
-    state.links
-      .filter((l) => l.regionA === regionA || l.regionB === regionA)
-      .map((l) => (l.regionA === regionA ? l.regionB : l.regionA)),
-  );
-  const candidateRegionBs = (regionAObj?.adjacentRegionIds ?? []).filter((id) => !alreadyLinkedIds.has(id));
-
-  useEffect(() => {
-    setRegionB('');
-    setCardId('');
-  }, [regionA]);
-
-  useEffect(() => {
-    if (cardId && regionB && !cardUsableForNetwork(cardId, regionA, regionB, player)) {
-      setCardId('');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [regionB, player.hand]);
-
-  const usableCards = regionB ? player.hand.filter((cid) => cardUsableForNetwork(cid, regionA, regionB, player)) : [];
-
-  return (
-    <div className="stack">
-      <div className="form-row">
-        <label className="field">
-          Van regio
-          <select className="select" value={regionA} onChange={(e) => setRegionA(e.target.value)}>
-            {state.regions.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="field">
-          Naar aangrenzende regio
-          <select className="select" value={regionB} onChange={(e) => setRegionB(e.target.value)}>
-            <option value="">-- kies --</option>
-            {candidateRegionBs.map((id) => {
-              const r = state.regions.find((region) => region.id === id);
-              return (
-                <option key={id} value={id}>
-                  {r?.name ?? id}
-                </option>
-              );
-            })}
-          </select>
-        </label>
-        <label className="field">
-          Kaart
-          <select className="select" value={cardId} disabled={!regionB} onChange={(e) => setCardId(e.target.value)}>
-            <option value="">{!regionB ? '-- kies eerst een regio --' : '-- kies een passende kaart --'}</option>
-            {usableCards.map((cid, i) => (
-              <option key={`${cid}-${i}`} value={cid}>
-                {cardLabel(cid)}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-      <div>
-        <button
-          className="btn btn-primary"
-          disabled={!cardId || !regionB}
-          onClick={() => dispatchAction({ type: 'network', playerId: player.id, regionA, regionB, cardId })}
-        >
-          Leg link
-        </button>
-        <ActionPreview
-          state={state}
-          action={cardId && regionB ? { type: 'network', playerId: player.id, regionA, regionB, cardId } : null}
-        />
-        {candidateRegionBs.length === 0 && (
-          <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-            Geen aangrenzende regio&apos;s meer beschikbaar vanaf hier.
-          </p>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function DevelopForm({
-  state,
-  player,
-  dispatchAction,
-}: {
-  state: GameState;
-  player: PlayerState;
-  dispatchAction: (action: GameAction) => void;
-}) {
-  const [industryType, setIndustryType] = useState<IndustryType>('energiecentrale');
-  const [cardId, setCardId] = useState('');
-
-  useEffect(() => {
-    if (cardId && !player.hand.includes(cardId)) {
-      setCardId('');
-    }
-  }, [player.hand, cardId]);
-
-  return (
-    <div className="stack">
-      <div className="form-row">
-        <label className="field">
-          Industrietype
-          <select className="select" value={industryType} onChange={(e) => setIndustryType(e.target.value as IndustryType)}>
-            {INDUSTRY_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {t} ({player.industryStock[t]?.length ?? 0} over)
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="field">
-          Kaart om te ontwikkelen (willekeurig)
-          <select className="select" value={cardId} onChange={(e) => setCardId(e.target.value)}>
-            <option value="">-- kies een kaart --</option>
-            {player.hand.map((cid, i) => (
-              <option key={`${cid}-${i}`} value={cid}>
-                {cardLabel(cid)}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-      <div>
-        <button
-          className="btn btn-primary"
-          disabled={!cardId}
-          onClick={() => dispatchAction({ type: 'develop', playerId: player.id, industryType, cardId })}
-        >
-          Ontwikkel
-        </button>
-        <ActionPreview
-          state={state}
-          action={cardId ? { type: 'develop', playerId: player.id, industryType, cardId } : null}
-        />
-      </div>
-    </div>
-  );
-}
-
-function SellForm({
-  state,
-  player,
-  dispatchAction,
-}: {
-  state: GameState;
-  player: PlayerState;
-  dispatchAction: (action: GameAction) => void;
-}) {
-  const [selected, setSelected] = useState<string[]>([]);
-  const sellableTiles = state.tiles.filter(
-    (t) => t.ownerId === player.id && !t.flipped && (t.type === 'handelspost' || t.type === 'mediaEnEducatie'),
-  );
-
-  function toggle(tileId: string) {
-    setSelected((prev) => (prev.includes(tileId) ? prev.filter((id) => id !== tileId) : [...prev, tileId]));
   }
+  return targets;
+}
 
-  return (
-    <div className="stack">
-      {sellableTiles.length === 0 && (
-        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-          Geen verkoopbare tegels. Bouw eerst een Handelspost of Media &amp; Educatie, verbonden via een Link met een
-          Netwerkhub.
-        </p>
-      )}
-      {sellableTiles.map((tile) => {
-        const region = state.regions.find((r) => r.id === tile.regionId);
-        return (
-          <label key={tile.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
-            <input type="checkbox" checked={selected.includes(tile.id)} onChange={() => toggle(tile.id)} />
-            {tile.type} L{tile.level} @ {region?.name ?? tile.regionId}
-          </label>
-        );
-      })}
-      <div>
-        <button
-          className="btn btn-primary"
-          disabled={selected.length === 0}
-          onClick={() => {
-            dispatchAction({ type: 'sell', playerId: player.id, tileIds: selected });
-            setSelected([]);
-          }}
-        >
-          Verkoop geselecteerde tegels
-        </button>
-      </div>
-    </div>
+function isEdgeBuilt(state: GameState, edge: MapEdgeDef): boolean {
+  return state.links.some(
+    (l) =>
+      (l.regionA === edge.regionA && l.regionB === edge.regionB) || (l.regionA === edge.regionB && l.regionB === edge.regionA),
   );
 }
 
-function LoanPanel({
-  state,
-  player,
-  dispatchAction,
+/** For a given hand card, the not-yet-built map edges it can legally link. */
+function networkTargetsForCard(state: GameState, player: PlayerState, cardId: string): Set<string> {
+  const def = CARD_DEFS_BY_ID[cardId];
+  const ids = new Set<string>();
+  if (!def) return ids;
+  if (def.type === 'wildcardRegion') {
+    if (!player.wildcardsAvailable.region) return ids;
+    for (const edge of MAP_EDGES) if (!isEdgeBuilt(state, edge)) ids.add(edge.id);
+    return ids;
+  }
+  if (def.type === 'region') {
+    for (const edge of MAP_EDGES) {
+      if (isEdgeBuilt(state, edge)) continue;
+      if (edge.regionA === def.regionId || edge.regionB === def.regionId) ids.add(edge.id);
+    }
+  }
+  return ids;
+}
+
+function IndustryTypeButton({
+  type,
+  active,
+  disabled,
+  onClick,
 }: {
-  state: GameState;
-  player: PlayerState;
-  dispatchAction: (action: GameAction) => void;
+  type: IndustryType;
+  active: boolean;
+  disabled?: boolean;
+  onClick: () => void;
 }) {
   return (
-    <div className="stack">
-      <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-        +30 sats direct, maar -3 permanent op de inkomenstrack. Gedeelde pool: {state.market.loanPoolRemaining} over.
-      </p>
-      <div>
-        <button
-          className="btn btn-primary"
-          disabled={state.market.loanPoolRemaining <= 0}
-          onClick={() => dispatchAction({ type: 'loan', playerId: player.id })}
-        >
-          Leen
-        </button>
-        <ActionPreview state={state} action={{ type: 'loan', playerId: player.id }} />
-      </div>
-    </div>
+    <button
+      className="btn industry-btn"
+      disabled={disabled}
+      onClick={onClick}
+      style={{
+        borderColor: active ? INDUSTRY_COLORS[type] : undefined,
+        background: active ? `${INDUSTRY_COLORS[type]}33` : undefined,
+      }}
+      title={type}
+    >
+      <svg viewBox="-12 -12 24 24" width={18} height={18}>
+        <IndustryIconPaths type={type} color={INDUSTRY_COLORS[type]} />
+      </svg>
+    </button>
   );
 }
 
@@ -522,11 +224,44 @@ export default function GamePage() {
   const lastError = useGameStore((s) => s.lastError);
   const dispatchAction = useGameStore((s) => s.dispatchAction);
   const loadFromStorage = useGameStore((s) => s.loadFromStorage);
+
   const [activeTab, setActiveTab] = useState<TabId>('build');
+
+  // Bouwen
+  const [buildCardId, setBuildCardId] = useState<string | null>(null);
+  const [buildSlot, setBuildSlot] = useState<{ regionId: string; slotId: string; candidates: IndustryType[] } | null>(null);
+  const [buildType, setBuildType] = useState<IndustryType | null>(null);
+
+  // Netwerken
+  const [networkCardId, setNetworkCardId] = useState<string | null>(null);
+  const [networkEdge, setNetworkEdge] = useState<MapEdgeDef | null>(null);
+
+  // Ontwikkelen
+  const [developCardId, setDevelopCardId] = useState<string | null>(null);
+  const [developType, setDevelopType] = useState<IndustryType | null>(null);
+
+  // Verkopen
+  const [sellTileIds, setSellTileIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!gameState) loadFromStorage();
   }, [gameState, loadFromStorage]);
+
+  function resetSelections() {
+    setBuildCardId(null);
+    setBuildSlot(null);
+    setBuildType(null);
+    setNetworkCardId(null);
+    setNetworkEdge(null);
+    setDevelopCardId(null);
+    setDevelopType(null);
+    setSellTileIds(new Set());
+  }
+
+  function changeTab(tab: TabId) {
+    resetSelections();
+    setActiveTab(tab);
+  }
 
   if (!gameState) {
     return (
@@ -545,25 +280,92 @@ export default function GamePage() {
 
   const currentPlayer = gameState.players[gameState.currentPlayerIndex]!;
 
+  // --- Derive board highlight/selection props for the active tab ---
+  let highlightedSlotKeys: Set<string> | undefined;
+  let onSlotClick: ((regionId: string, slotId: string) => void) | undefined;
+  let highlightedEdgeIds: Set<string> | undefined;
+  let onEdgeClick: ((edge: MapEdgeDef) => void) | undefined;
+  let selectableTileIds: Set<string> | undefined;
+  let selectedTileIds: Set<string> | undefined;
+  let onTileClick: ((tileId: string) => void) | undefined;
+
+  const buildTargets = buildCardId ? buildTargetsForCard(gameState, currentPlayer, buildCardId) : new Map();
+
+  if (activeTab === 'build') {
+    if (buildCardId && !buildSlot) {
+      highlightedSlotKeys = new Set(buildTargets.keys());
+      onSlotClick = (regionId, slotId) => {
+        const candidates = buildTargets.get(`${regionId}:${slotId}`);
+        if (!candidates) return;
+        setBuildSlot({ regionId, slotId, candidates });
+        setBuildType(candidates.length === 1 ? candidates[0]! : null);
+      };
+    }
+  } else if (activeTab === 'network') {
+    if (networkCardId && !networkEdge) {
+      const targets = networkTargetsForCard(gameState, currentPlayer, networkCardId);
+      highlightedEdgeIds = targets;
+      onEdgeClick = (edge) => setNetworkEdge(edge);
+    }
+  } else if (activeTab === 'sell') {
+    selectableTileIds = new Set(
+      gameState.tiles
+        .filter((t) => t.ownerId === currentPlayer.id && !t.flipped && (t.type === 'handelspost' || t.type === 'mediaEnEducatie'))
+        .map((t) => t.id),
+    );
+    selectedTileIds = sellTileIds;
+    onTileClick = (tileId) =>
+      setSellTileIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(tileId)) next.delete(tileId);
+        else next.add(tileId);
+        return next;
+      });
+  }
+
+  const buildAction: GameAction | null =
+    buildCardId && buildSlot && buildType
+      ? { type: 'build', playerId: currentPlayer.id, regionId: buildSlot.regionId, slotId: buildSlot.slotId, industryType: buildType, cardId: buildCardId }
+      : null;
+  const networkAction: GameAction | null =
+    networkCardId && networkEdge
+      ? { type: 'network', playerId: currentPlayer.id, regionA: networkEdge.regionA, regionB: networkEdge.regionB, cardId: networkCardId }
+      : null;
+  const developAction: GameAction | null =
+    developCardId && developType ? { type: 'develop', playerId: currentPlayer.id, industryType: developType, cardId: developCardId } : null;
+  const sellAction: GameAction | null = sellTileIds.size > 0 ? { type: 'sell', playerId: currentPlayer.id, tileIds: [...sellTileIds] } : null;
+  const loanAction: GameAction = { type: 'loan', playerId: currentPlayer.id };
+
+  function regionName(regionId: string): string {
+    return gameState!.regions.find((r) => r.id === regionId)?.name ?? regionId;
+  }
+
   return (
     <main className="page">
       <header className="app-header">
         <h1 className="app-title">
           <span className="mark">◆</span> SOVEREIGN
         </h1>
-        <span style={{ fontFamily: 'var(--font-display)', color: 'var(--text-muted)', fontSize: '0.75rem' }}>
-          PIONIERSFASE
-        </span>
+        <span style={{ fontFamily: 'var(--font-display)', color: 'var(--text-muted)', fontSize: '0.75rem' }}>PIONIERSFASE</span>
       </header>
 
       <HelpPanel />
       <TurnBanner state={gameState} />
-      {lastError && <div className="error-banner" style={{ marginBottom: '1.25rem' }}>Fout: {lastError}</div>}
+      {lastError && <div className="error-banner" style={{ marginBottom: '1.25rem' }}>{lastError}</div>}
 
       <div className="game-grid">
         <div className="stack">
           <div className="panel">
-            <BoardSvg state={gameState} />
+            <BoardSvg
+              state={gameState}
+              highlightedSlotKeys={highlightedSlotKeys}
+              onSlotClick={onSlotClick}
+              highlightedEdgeIds={highlightedEdgeIds}
+              onEdgeClick={onEdgeClick}
+              selectableTileIds={selectableTileIds}
+              selectedTileIds={selectedTileIds}
+              onTileClick={onTileClick}
+            />
             <div style={{ marginTop: '0.85rem' }}>
               <IndustryLegend />
             </div>
@@ -583,53 +385,189 @@ export default function GamePage() {
           </div>
 
           <div className="panel">
-            <PlayerHandPanel player={currentPlayer} />
-          </div>
-
-          <div className="panel">
             <div className="action-tabs">
               {TABS.map((tab) => (
-                <button
-                  key={tab.id}
-                  className={`action-tab${activeTab === tab.id ? ' is-active' : ''}`}
-                  onClick={() => setActiveTab(tab.id)}
-                >
+                <button key={tab.id} className={`action-tab${activeTab === tab.id ? ' is-active' : ''}`} onClick={() => changeTab(tab.id)}>
                   {tab.label}
                 </button>
               ))}
             </div>
 
             {activeTab === 'build' && (
-              <BuildForm state={gameState} player={currentPlayer} dispatchAction={dispatchAction} />
+              <div className="stack">
+                <p className="step-hint">
+                  {!buildCardId
+                    ? '1. Kies hieronder een kaart uit je hand.'
+                    : !buildSlot
+                      ? '2. Klik op een gemarkeerd slot op het bord.'
+                      : buildSlot.candidates.length > 1 && !buildType
+                        ? '3. Kies welk industrietype je hier bouwt.'
+                        : '4. Bevestig de bouw.'}
+                </p>
+                {buildCardId && buildSlot && (
+                  <div>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
+                      {regionName(buildSlot.regionId)} — slot {buildSlot.slotId}
+                    </p>
+                    {buildSlot.candidates.length > 1 && (
+                      <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.5rem' }}>
+                        {buildSlot.candidates.map((t) => (
+                          <IndustryTypeButton key={t} type={t} active={buildType === t} onClick={() => setBuildType(t)} />
+                        ))}
+                      </div>
+                    )}
+                    <button className="btn btn-primary" disabled={!buildAction} onClick={() => buildAction && (dispatchAction(buildAction), resetSelections())}>
+                      Bouw
+                    </button>{' '}
+                    <button className="btn" onClick={() => { setBuildSlot(null); setBuildType(null); }}>
+                      Terug
+                    </button>
+                    <ActionPreview state={gameState} action={buildAction} />
+                  </div>
+                )}
+              </div>
             )}
+
             {activeTab === 'network' && (
-              <NetworkForm state={gameState} player={currentPlayer} dispatchAction={dispatchAction} />
+              <div className="stack">
+                <p className="step-hint">
+                  {!networkCardId
+                    ? '1. Kies hieronder een kaart uit je hand.'
+                    : !networkEdge
+                      ? '2. Klik op een gemarkeerde verbinding op het bord.'
+                      : '3. Bevestig de link.'}
+                </p>
+                {networkCardId && networkEdge && (
+                  <div>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
+                      {regionName(networkEdge.regionA)} &harr; {regionName(networkEdge.regionB)}
+                    </p>
+                    <button className="btn btn-primary" onClick={() => networkAction && (dispatchAction(networkAction), resetSelections())}>
+                      Leg link
+                    </button>{' '}
+                    <button className="btn" onClick={() => setNetworkEdge(null)}>
+                      Terug
+                    </button>
+                    <ActionPreview state={gameState} action={networkAction} />
+                  </div>
+                )}
+                {networkCardId && !networkEdge && networkTargetsForCard(gameState, currentPlayer, networkCardId).size === 0 && (
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                    Geen aangrenzende, nog niet gelegde verbinding beschikbaar voor deze kaart.
+                  </p>
+                )}
+              </div>
             )}
+
             {activeTab === 'develop' && (
-              <DevelopForm state={gameState} player={currentPlayer} dispatchAction={dispatchAction} />
+              <div className="stack">
+                <p className="step-hint">
+                  {!developCardId ? '1. Kies hieronder een kaart om te ontwikkelen (elke kaart werkt).' : '2. Kies een industrietype.'}
+                </p>
+                {developCardId && (
+                  <div>
+                    <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.5rem' }}>
+                      {INDUSTRY_TYPES.map((t) => (
+                        <IndustryTypeButton
+                          key={t}
+                          type={t}
+                          active={developType === t}
+                          disabled={(currentPlayer.industryStock[t]?.length ?? 0) === 0}
+                          onClick={() => setDevelopType(t)}
+                        />
+                      ))}
+                    </div>
+                    <button
+                      className="btn btn-primary"
+                      disabled={!developAction}
+                      onClick={() => developAction && (dispatchAction(developAction), resetSelections())}
+                    >
+                      Ontwikkel
+                    </button>
+                    <ActionPreview state={gameState} action={developAction} />
+                  </div>
+                )}
+              </div>
             )}
+
             {activeTab === 'sell' && (
-              <SellForm state={gameState} player={currentPlayer} dispatchAction={dispatchAction} />
+              <div className="stack">
+                <p className="step-hint">Klik op je Handelspost/Media-tegels op het bord om ze te selecteren.</p>
+                {selectableTileIds && selectableTileIds.size === 0 && (
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                    Geen verkoopbare tegels. Bouw eerst een Handelspost of Media &amp; Educatie, verbonden via een Link met een
+                    Netwerkhub.
+                  </p>
+                )}
+                {sellTileIds.size > 0 && (
+                  <div>
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => {
+                        if (sellAction) dispatchAction(sellAction);
+                        resetSelections();
+                      }}
+                    >
+                      Verkoop {sellTileIds.size} tegel{sellTileIds.size > 1 ? 's' : ''}
+                    </button>
+                    <ActionPreview state={gameState} action={sellAction} />
+                  </div>
+                )}
+              </div>
             )}
+
             {activeTab === 'loan' && (
-              <LoanPanel state={gameState} player={currentPlayer} dispatchAction={dispatchAction} />
+              <div className="stack">
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                  +30 sats direct, maar -3 permanent op de inkomenstrack. Gedeelde pool: {gameState.market.loanPoolRemaining} over.
+                </p>
+                <div>
+                  <button
+                    className="btn btn-primary"
+                    disabled={gameState.market.loanPoolRemaining <= 0}
+                    onClick={() => dispatchAction(loanAction)}
+                  >
+                    Leen
+                  </button>
+                  <ActionPreview state={gameState} action={loanAction} />
+                </div>
+              </div>
             )}
           </div>
 
-          <button
-            className="btn"
-            style={{ width: '100%' }}
-            onClick={() => dispatchAction({ type: 'endTurn', playerId: currentPlayer.id })}
-          >
+          <div className="panel">
+            <PlayerHandPanel
+              player={currentPlayer}
+              selectedCardId={
+                activeTab === 'build' ? buildCardId : activeTab === 'network' ? networkCardId : activeTab === 'develop' ? developCardId : null
+              }
+              onSelectCard={
+                activeTab === 'build'
+                  ? (cardId) => {
+                      setBuildCardId(cardId);
+                      setBuildSlot(null);
+                      setBuildType(null);
+                    }
+                  : activeTab === 'network'
+                    ? (cardId) => {
+                        setNetworkCardId(cardId);
+                        setNetworkEdge(null);
+                      }
+                    : activeTab === 'develop'
+                      ? (cardId) => setDevelopCardId(cardId)
+                      : undefined
+              }
+            />
+          </div>
+
+          <button className="btn" style={{ width: '100%' }} onClick={() => { dispatchAction({ type: 'endTurn', playerId: currentPlayer.id }); resetSelections(); }}>
             Beurt beëindigen
           </button>
         </div>
       </div>
 
       <details style={{ marginTop: '2rem' }}>
-        <summary style={{ cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-          Ruwe staat (debug)
-        </summary>
+        <summary style={{ cursor: 'pointer', color: 'var(--text-faint)', fontSize: '0.75rem' }}>Debug</summary>
         <pre
           style={{
             maxHeight: 400,

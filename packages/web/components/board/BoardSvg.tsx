@@ -1,9 +1,27 @@
-import { MAP_EDGES, type GameState } from '@sovereign/engine';
+import { MAP_EDGES, type GameState, type MapEdgeDef } from '@sovereign/engine';
 import { LinkEdge } from './LinkEdge';
 import { REGION_POSITIONS } from './regionLayout';
 import { RegionNode } from './RegionNode';
 
-export function BoardSvg({ state }: { state: GameState }) {
+export function BoardSvg({
+  state,
+  highlightedSlotKeys,
+  onSlotClick,
+  highlightedEdgeIds,
+  onEdgeClick,
+  selectableTileIds,
+  selectedTileIds,
+  onTileClick,
+}: {
+  state: GameState;
+  highlightedSlotKeys?: Set<string>;
+  onSlotClick?: (regionId: string, slotId: string) => void;
+  highlightedEdgeIds?: Set<string>;
+  onEdgeClick?: (edge: MapEdgeDef) => void;
+  selectableTileIds?: Set<string>;
+  selectedTileIds?: Set<string>;
+  onTileClick?: (tileId: string) => void;
+}) {
   const tileById = new Map(state.tiles.map((t) => [t.id, t]));
   const playerIndexById = new Map(state.players.map((p, i) => [p.id, i]));
 
@@ -47,13 +65,32 @@ export function BoardSvg({ state }: { state: GameState }) {
               (l.regionA === edge.regionB && l.regionB === edge.regionA),
           );
           return (
-            <LinkEdge key={edge.id} a={a} b={b} ownerIndex={built ? playerIndexById.get(built.ownerId) : undefined} />
+            <LinkEdge
+              key={edge.id}
+              a={a}
+              b={b}
+              ownerIndex={built ? playerIndexById.get(built.ownerId) : undefined}
+              highlighted={!built && !!highlightedEdgeIds?.has(edge.id)}
+              onClick={!built && highlightedEdgeIds?.has(edge.id) && onEdgeClick ? () => onEdgeClick(edge) : undefined}
+            />
           );
         })}
         {state.regions.map((region) => {
           const position = REGION_POSITIONS[region.id];
           if (!position) return null;
-          return <RegionNode key={region.id} region={region} position={position} tileById={tileById} />;
+          return (
+            <RegionNode
+              key={region.id}
+              region={region}
+              position={position}
+              tileById={tileById}
+              highlightedSlotKeys={highlightedSlotKeys}
+              onSlotClick={onSlotClick}
+              selectableTileIds={selectableTileIds}
+              selectedTileIds={selectedTileIds}
+              onTileClick={onTileClick}
+            />
+          );
         })}
       </svg>
     </div>

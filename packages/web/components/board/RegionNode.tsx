@@ -5,10 +5,20 @@ export function RegionNode({
   region,
   position,
   tileById,
+  highlightedSlotKeys,
+  onSlotClick,
+  selectableTileIds,
+  selectedTileIds,
+  onTileClick,
 }: {
   region: Region;
   position: { x: number; y: number };
   tileById: Map<string, IndustryTileInstance>;
+  highlightedSlotKeys?: Set<string>;
+  onSlotClick?: (regionId: string, slotId: string) => void;
+  selectableTileIds?: Set<string>;
+  selectedTileIds?: Set<string>;
+  onTileClick?: (tileId: string) => void;
 }) {
   return (
     <g transform={`translate(${position.x}, ${position.y})`} filter="url(#region-shadow)">
@@ -34,12 +44,44 @@ export function RegionNode({
         const sx = Math.cos(angle) * 26;
         const sy = Math.sin(angle) * 26;
         const tile = slot.occupiedByTileId ? tileById.get(slot.occupiedByTileId) : undefined;
+        const slotKey = `${region.id}:${slot.id}`;
+        const isHighlighted = !tile && !!highlightedSlotKeys?.has(slotKey);
+        const isSelectableTile = !!tile && !!selectableTileIds?.has(tile.id);
+        const isSelectedTile = !!tile && !!selectedTileIds?.has(tile.id);
+
         return (
-          <g key={slot.id} transform={`translate(${sx}, ${sy})`}>
+          <g
+            key={slot.id}
+            transform={`translate(${sx}, ${sy})`}
+            onClick={
+              isHighlighted && onSlotClick
+                ? () => onSlotClick(region.id, slot.id)
+                : isSelectableTile && onTileClick && tile
+                  ? () => onTileClick(tile.id)
+                  : undefined
+            }
+            style={{ cursor: isHighlighted || isSelectableTile ? 'pointer' : 'default' }}
+          >
             {tile ? (
-              <IndustryTileIcon type={tile.type} level={tile.level} flipped={tile.flipped} />
+              <>
+                <IndustryTileIcon type={tile.type} level={tile.level} flipped={tile.flipped} />
+                {isSelectableTile && (
+                  <circle r={15} fill="none" stroke="#f7931a" strokeWidth={2} strokeDasharray="3 2" />
+                )}
+                {isSelectedTile && <circle r={15} fill="none" stroke="#f7931a" strokeWidth={2.5} />}
+              </>
             ) : (
-              <rect x={-11} y={-11} width={22} height={22} rx={4} fill="none" stroke="#3a4451" strokeDasharray="3 2" />
+              <rect
+                x={-11}
+                y={-11}
+                width={22}
+                height={22}
+                rx={4}
+                fill={isHighlighted ? 'rgba(247,147,26,0.18)' : 'none'}
+                stroke={isHighlighted ? '#f7931a' : '#3a4451'}
+                strokeWidth={isHighlighted ? 2 : 1}
+                strokeDasharray={isHighlighted ? undefined : '3 2'}
+              />
             )}
           </g>
         );
