@@ -95,7 +95,7 @@ describe('applyBuild rejections', () => {
     const result = applyBuild(state, buildAction({ regionId: 'grensland' }));
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.error).toMatch(/does not match/);
+    expect(result.error).toMatch(/komt niet overeen/);
     expect(result.state).toBe(state);
   });
 
@@ -113,7 +113,7 @@ describe('applyBuild rejections', () => {
     const result = applyBuild(state, buildAction());
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.error).toMatch(/Insufficient sats/);
+    expect(result.error).toMatch(/Onvoldoende sats/);
   });
 
   it('rejects building into an already-occupied slot', () => {
@@ -128,7 +128,7 @@ describe('applyBuild rejections', () => {
     );
     expect(second.ok).toBe(false);
     if (second.ok) return;
-    expect(second.error).toMatch(/occupied/);
+    expect(second.error).toMatch(/al bezet/);
   });
 
   it('rejects when the industry stock is exhausted', () => {
@@ -139,7 +139,7 @@ describe('applyBuild rejections', () => {
     const result = applyBuild(state, buildAction());
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.error).toMatch(/No remaining tiles/);
+    expect(result.error).toMatch(/Geen tegels/);
   });
 
   it('rejects when it is not the acting player\'s turn', () => {
@@ -147,7 +147,7 @@ describe('applyBuild rejections', () => {
     const result = applyBuild(state, buildAction({ playerId: 'p2' }));
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.error).toMatch(/not this player/);
+    expect(result.error).toMatch(/niet aan zet/);
   });
 
   it('rejects an unknown slot', () => {
@@ -164,6 +164,6 @@ describe('applyBuild rejections', () => {
     );
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.error).toMatch(/not allowed in this slot/);
+    expect(result.error).toMatch(/niet toegestaan/);
   });
 });

@@ -87,6 +87,6 @@ describe('applyEndTurn', () => {
     const result = applyEndTurn(state, { type: 'endTurn', playerId: 'p1' });
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.error).toMatch(/already ended/);
+    expect(result.error).toMatch(/al afgelopen/);
   });
 });

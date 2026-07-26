@@ -21,7 +21,7 @@ describe('applyLoan', () => {
     const result = applyLoan(state, { type: 'loan', playerId: 'p1' });
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.error).toMatch(/No loans remaining/);
+    expect(result.error).toMatch(/Geen leningen/);
   });
 
   it('rejects when it is not the acting player\'s turn', () => {

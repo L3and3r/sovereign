@@ -22,39 +22,39 @@ export function applyBuild(state: GameState, action: BuildAction): ActionResult 
 
   const player = getPlayer(state, action.playerId);
 
-  if (!playerHasCard(player, action.cardId)) return fail(state, 'Card not in hand');
+  if (!playerHasCard(player, action.cardId)) return fail(state, 'Kaart niet op de hand');
   const card = CARD_DEFS_BY_ID[action.cardId];
-  if (!card) return fail(state, 'Unknown card');
+  if (!card) return fail(state, 'Onbekende kaart');
 
   if (card.type === 'region') {
-    if (card.regionId !== action.regionId) return fail(state, 'Region card does not match the chosen region');
+    if (card.regionId !== action.regionId) return fail(state, 'Regiokaart komt niet overeen met de gekozen regio');
   } else if (card.type === 'wildcardRegion') {
-    if (!player.wildcardsAvailable.region) return fail(state, 'Region wildcard already used this era');
+    if (!player.wildcardsAvailable.region) return fail(state, 'Regio-jokerkaart is dit tijdperk al gebruikt');
   } else if (card.type === 'industry') {
     if (card.industryType !== action.industryType) {
-      return fail(state, 'Industry card does not match the chosen industry type');
+      return fail(state, 'Industriekaart komt niet overeen met het gekozen industrietype');
     }
   } else if (card.type === 'wildcardIndustry') {
-    if (!player.wildcardsAvailable.industry) return fail(state, 'Industry wildcard already used this era');
+    if (!player.wildcardsAvailable.industry) return fail(state, 'Industrie-jokerkaart is dit tijdperk al gebruikt');
   } else {
-    return fail(state, 'This card cannot be used to build');
+    return fail(state, 'Deze kaart kan niet gebruikt worden om te bouwen');
   }
 
   const regionIndex = state.regions.findIndex((r) => r.id === action.regionId);
-  if (regionIndex === -1) return fail(state, 'Unknown region');
+  if (regionIndex === -1) return fail(state, 'Onbekende regio');
   const region = state.regions[regionIndex]!;
 
   const slotIndex = region.slots.findIndex((s) => s.id === action.slotId);
-  if (slotIndex === -1) return fail(state, 'Unknown slot');
+  if (slotIndex === -1) return fail(state, 'Onbekend slot');
   const slot = region.slots[slotIndex]!;
 
-  if (slot.occupiedByTileId) return fail(state, 'Slot is already occupied');
+  if (slot.occupiedByTileId) return fail(state, 'Slot is al bezet');
   if (!slot.allowedTypes.includes(action.industryType)) {
-    return fail(state, 'This industry type is not allowed in this slot');
+    return fail(state, 'Dit industrietype is niet toegestaan in dit slot');
   }
 
   const stock = player.industryStock[action.industryType];
-  if (!stock || stock.length === 0) return fail(state, 'No remaining tiles of this industry type');
+  if (!stock || stock.length === 0) return fail(state, 'Geen tegels van dit industrietype meer over');
   const level = stock[0]!;
   const levelDef = INDUSTRIES[action.industryType].levels[level - 1]!;
 
@@ -66,7 +66,7 @@ export function applyBuild(state: GameState, action: BuildAction): ActionResult 
   };
 
   const { totalSats } = resolveCostWithFallbackMarket(player, cost, state.market.energyPrice, state.market.bandwidthPrice);
-  if (player.sats < totalSats) return fail(state, 'Insufficient sats (including any market purchase of energy/bandwidth)');
+  if (player.sats < totalSats) return fail(state, 'Onvoldoende sats (inclusief eventuele marktaankoop van energie/bandbreedte)');
 
   const tileId = `tile-${state.tiles.length + 1}`;
   const flipped = AUTO_FLIP_INDUSTRY_TYPES.has(action.industryType);

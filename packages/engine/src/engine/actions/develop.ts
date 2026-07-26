@@ -17,10 +17,10 @@ export function applyDevelop(state: GameState, action: DevelopAction): ActionRes
 
   const player = getPlayer(state, action.playerId);
 
-  if (!playerHasCard(player, action.cardId)) return fail(state, 'Card not in hand');
+  if (!playerHasCard(player, action.cardId)) return fail(state, 'Kaart niet op de hand');
 
   const stock = player.industryStock[action.industryType];
-  if (!stock || stock.length === 0) return fail(state, 'No remaining tiles of this industry type to develop past');
+  if (!stock || stock.length === 0) return fail(state, 'Geen tegels van dit industrietype meer over om te ontwikkelen');
 
   const { totalSats } = resolveCostWithFallbackMarket(
     player,
@@ -28,7 +28,7 @@ export function applyDevelop(state: GameState, action: DevelopAction): ActionRes
     state.market.energyPrice,
     state.market.bandwidthPrice,
   );
-  if (player.sats < totalSats) return fail(state, 'Insufficient sats (including any market purchase of energy)');
+  if (player.sats < totalSats) return fail(state, 'Onvoldoende sats (inclusief eventuele marktaankoop van energie)');
 
   let updatedPlayer = payResourceCost(player, DEVELOP_ENERGY_COST, totalSats);
   updatedPlayer = removeCardFromHand(updatedPlayer, action.cardId);

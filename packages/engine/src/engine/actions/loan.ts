@@ -15,7 +15,7 @@ export function applyLoan(state: GameState, action: LoanAction): ActionResult {
   const turnError = validateCanTakeAction(state, action.playerId);
   if (turnError) return fail(state, turnError);
 
-  if (state.market.loanPoolRemaining <= 0) return fail(state, 'No loans remaining in the shared pool');
+  if (state.market.loanPoolRemaining <= 0) return fail(state, 'Geen leningen meer over in de gezamenlijke pool');
 
   const player = getPlayer(state, action.playerId);
   const updatedPlayer = {

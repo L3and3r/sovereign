@@ -19,26 +19,26 @@ export function applyNetwork(state: GameState, action: NetworkAction): ActionRes
 
   const player = getPlayer(state, action.playerId);
 
-  if (!playerHasCard(player, action.cardId)) return fail(state, 'Card not in hand');
+  if (!playerHasCard(player, action.cardId)) return fail(state, 'Kaart niet op de hand');
   const card = CARD_DEFS_BY_ID[action.cardId];
-  if (!card) return fail(state, 'Unknown card');
+  if (!card) return fail(state, 'Onbekende kaart');
 
   if (card.type === 'region') {
     if (card.regionId !== action.regionA && card.regionId !== action.regionB) {
-      return fail(state, 'Region card does not match either endpoint of this link');
+      return fail(state, 'Regiokaart komt niet overeen met een van beide uiteinden van deze link');
     }
   } else if (card.type === 'wildcardRegion') {
-    if (!player.wildcardsAvailable.region) return fail(state, 'Region wildcard already used this era');
+    if (!player.wildcardsAvailable.region) return fail(state, 'Regio-jokerkaart is dit tijdperk al gebruikt');
   } else {
-    return fail(state, 'This card cannot be used to build a link');
+    return fail(state, 'Deze kaart kan niet gebruikt worden om een link te bouwen');
   }
 
   const regionA = state.regions.find((r) => r.id === action.regionA);
   const regionB = state.regions.find((r) => r.id === action.regionB);
-  if (!regionA || !regionB) return fail(state, 'Unknown region');
+  if (!regionA || !regionB) return fail(state, 'Onbekende regio');
 
   if (!regionA.adjacentRegionIds.includes(action.regionB)) {
-    return fail(state, 'These regions are not adjacent');
+    return fail(state, 'Deze regio\'s grenzen niet aan elkaar');
   }
 
   const alreadyLinked = state.links.some(
@@ -46,7 +46,7 @@ export function applyNetwork(state: GameState, action: NetworkAction): ActionRes
       (link.regionA === action.regionA && link.regionB === action.regionB) ||
       (link.regionA === action.regionB && link.regionB === action.regionA),
   );
-  if (alreadyLinked) return fail(state, 'A link already exists between these regions');
+  if (alreadyLinked) return fail(state, 'Er bestaat al een link tussen deze regio\'s');
 
   const surcharge = regionA.hasBorderMarker || regionB.hasBorderMarker ? NETWORK_BORDER_SURCHARGE : ZERO_RESOURCES;
   const cost = {
@@ -56,7 +56,7 @@ export function applyNetwork(state: GameState, action: NetworkAction): ActionRes
   };
 
   const { totalSats } = resolveCostWithFallbackMarket(player, cost, state.market.energyPrice, state.market.bandwidthPrice);
-  if (player.sats < totalSats) return fail(state, 'Insufficient sats (including any market purchase of energy/bandwidth)');
+  if (player.sats < totalSats) return fail(state, 'Onvoldoende sats (inclusief eventuele marktaankoop van energie/bandbreedte)');
 
   let updatedPlayer = payResourceCost(player, cost, totalSats);
   updatedPlayer = removeCardFromHand(updatedPlayer, action.cardId);

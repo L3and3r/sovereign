@@ -10,9 +10,9 @@ function fail(state: GameState, error: string): ActionResult {
 }
 
 export function applyEndTurn(state: GameState, action: EndTurnAction): ActionResult {
-  if (state.phase !== 'playing') return fail(state, 'The era has already ended');
+  if (state.phase !== 'playing') return fail(state, 'Dit tijdperk is al afgelopen');
   const currentPlayer = state.players[state.currentPlayerIndex];
-  if (!currentPlayer || currentPlayer.id !== action.playerId) return fail(state, "It is not this player's turn");
+  if (!currentPlayer || currentPlayer.id !== action.playerId) return fail(state, 'Deze speler is niet aan zet');
 
   const needed = Math.max(0, STARTING_HAND_SIZE - currentPlayer.hand.length);
   const drawn = state.deck.slice(0, needed);

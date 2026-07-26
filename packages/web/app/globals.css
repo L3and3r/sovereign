@@ -181,7 +181,7 @@ h3 {
   display: flex;
   flex-wrap: wrap;
   gap: 0.65rem;
-  padding: 0.25rem 0.1rem 0.6rem;
+  padding: 1.75rem 0.1rem 0.6rem;
 }
 
 .game-card {
@@ -197,23 +197,38 @@ h3 {
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.45);
   cursor: pointer;
   transition:
-    transform 0.15s ease,
-    box-shadow 0.15s ease;
+    transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.25s ease;
   position: relative;
 }
 
 .game-card:hover {
-  transform: translateY(-8px);
+  transform: translateY(-8px) scale(1.05);
   box-shadow: 0 14px 24px rgba(0, 0, 0, 0.55);
   z-index: 5;
 }
 
 .game-card.is-selected {
-  transform: translateY(-10px);
+  transform: translateY(-18px) scale(1.16);
   box-shadow:
     0 0 0 3px var(--accent),
-    0 14px 24px rgba(0, 0, 0, 0.55);
-  z-index: 6;
+    0 22px 34px rgba(0, 0, 0, 0.6);
+  z-index: 8;
+  animation: card-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes card-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 3px var(--accent),
+      0 22px 34px rgba(0, 0, 0, 0.6);
+  }
+  50% {
+    box-shadow:
+      0 0 0 5px var(--accent),
+      0 22px 38px rgba(0, 0, 0, 0.6);
+  }
 }
 
 .game-card.is-disabled {
@@ -224,6 +239,55 @@ h3 {
 .game-card.is-disabled:hover {
   transform: none;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.45);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-card {
+    transition: none;
+  }
+  .game-card.is-selected {
+    animation: none;
+  }
+}
+
+.card-tooltip {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  width: 170px;
+  background: #0e1217;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.6rem;
+  font-size: 0.7rem;
+  line-height: 1.4;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+  z-index: 20;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+}
+
+.game-card:hover .card-tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.card-tooltip-quote {
+  margin: 0 0 0.3rem;
+  color: var(--text);
+  font-style: italic;
+}
+
+.card-tooltip-author {
+  margin: 0;
+  color: var(--accent);
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  text-align: right;
 }
 
 .game-card-art {
@@ -511,4 +575,83 @@ h3 {
 ::-webkit-scrollbar-thumb {
   background: var(--border-strong);
   border-radius: 999px;
+}
+
+/* Tutorial */
+
+.tutorial-overlay {
+  position: fixed;
+  left: 50%;
+  bottom: 1.25rem;
+  transform: translateX(-50%);
+  z-index: 100;
+  width: min(480px, calc(100vw - 2rem));
+}
+
+.tutorial-card {
+  background: var(--surface-raised);
+  border: 2px solid var(--accent);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.2rem;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+  animation: tutorial-in 0.3s ease;
+}
+
+@keyframes tutorial-in {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.tutorial-step {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  color: var(--accent);
+  margin: 0 0 0.3rem;
+  letter-spacing: 0.05em;
+}
+
+.tutorial-title {
+  margin: 0 0 0.4rem;
+  font-size: 1rem;
+}
+
+.tutorial-body {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.tutorial-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.tutorial-restart-btn {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  background: none;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 0.3rem 0.6rem;
+  cursor: pointer;
+}
+
+.tutorial-restart-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tutorial-card {
+    animation: none;
+  }
 }

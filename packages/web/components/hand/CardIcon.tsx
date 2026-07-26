@@ -21,7 +21,6 @@ export function CardIcon({
     <div
       className={`game-card${selected ? ' is-selected' : ''}${disabled ? ' is-disabled' : ''}`}
       style={{ background: `linear-gradient(160deg, ${frame.bg} 0%, ${frame.bgDark} 100%)` }}
-      title={def?.type}
       onClick={disabled ? undefined : onClick}
       role={onClick ? 'button' : undefined}
     >
@@ -36,6 +35,13 @@ export function CardIcon({
       </div>
       <div className="game-card-name">{def?.flavorName ?? cardId}</div>
       <div className="game-card-type">{def?.type ?? ''}</div>
+
+      {def && (
+        <div className="card-tooltip">
+          <p className="card-tooltip-quote">&ldquo;{def.quote.text}&rdquo;</p>
+          <p className="card-tooltip-author">— {def.quote.author}</p>
+        </div>
+      )}
     </div>
   );
 }

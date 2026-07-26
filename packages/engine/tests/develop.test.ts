@@ -43,7 +43,7 @@ describe('applyDevelop', () => {
     const result = applyDevelop(state, developAction({ cardId: 'card-industry-handelspost' }));
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.error).toMatch(/not in hand/);
+    expect(result.error).toMatch(/niet op de hand/);
   });
 
   it('rejects when the industry stock is already fully developed', () => {
@@ -54,7 +54,7 @@ describe('applyDevelop', () => {
     const result = applyDevelop(state, developAction());
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.error).toMatch(/No remaining tiles/);
+    expect(result.error).toMatch(/Geen tegels/);
   });
 
   it('rejects insufficient sats', () => {
@@ -63,7 +63,7 @@ describe('applyDevelop', () => {
     const result = applyDevelop(state, developAction());
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.error).toMatch(/Insufficient sats/);
+    expect(result.error).toMatch(/Onvoldoende sats/);
   });
 
   it('rejects when it is not the acting player\'s turn', () => {

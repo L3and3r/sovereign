@@ -19,6 +19,7 @@ import { IndustryLegend } from '../../components/board/IndustryLegend';
 import { PlayerHandPanel } from '../../components/hand/PlayerHandPanel';
 import { HelpPanel } from '../../components/layout/HelpPanel';
 import { TurnBanner } from '../../components/layout/TurnBanner';
+import { TutorialOverlay } from '../../components/layout/TutorialOverlay';
 import { DemandTrackView } from '../../components/market/DemandTrackView';
 import { IncomeTrackView } from '../../components/market/IncomeTrackView';
 import { useGameStore } from '../../lib/store';
@@ -170,6 +171,33 @@ function IndustryTypeButton({
   );
 }
 
+const TUTORIAL_STORAGE_KEY = 'sovereign-tutorial-seen';
+
+const TUTORIAL_STEPS: { title: string; body: string }[] = [
+  {
+    title: 'Welkom bij Sovereign',
+    body: "Deze korte tutorial leidt je door je eerste beurt. Klik op 'Volgende' om te beginnen.",
+  },
+  { title: 'Bouwen — stap 1', body: 'Kies hieronder een kaart uit je hand om een industrie te bouwen.' },
+  {
+    title: 'Bouwen — stap 2',
+    body: 'Klik op een oranje gemarkeerd slot op het bord — dat is een geldige bouwplek voor deze kaart.',
+  },
+  { title: 'Bouwen — stap 3', body: "Bevestig met de knop 'Bouw'. Je ziet vooraf wat het kost." },
+  {
+    title: 'Netwerken',
+    body: "Je hebt nog 1 actie over deze beurt. Klik op het tabblad 'Netwerken' om een verbinding te leggen.",
+  },
+  { title: 'Netwerken — stap 1', body: 'Kies een kaart uit je hand om een link te bouwen.' },
+  { title: 'Netwerken — stap 2', body: "Klik op een gemarkeerde verbinding tussen twee regio's op het bord." },
+  { title: 'Netwerken — stap 3', body: "Bevestig met 'Leg link'." },
+  { title: 'Beurt beëindigen', body: "Je hebt beide acties gebruikt. Klik op 'Beurt beëindigen' onderaan." },
+  {
+    title: 'Klaar!',
+    body: 'Zo werkt het spel: kies een kaart, klik op het bord, bevestig. Ontwikkelen en Verkopen werken hetzelfde. Veel plezier!',
+  },
+];
+
 const TABS = [
   { id: 'build', label: 'Bouwen' },
   { id: 'network', label: 'Netwerken' },
@@ -243,9 +271,41 @@ export default function GamePage() {
   // Verkopen
   const [sellTileIds, setSellTileIds] = useState<Set<string>>(new Set());
 
+  // Tutorial
+  const [tutorialActive, setTutorialActive] = useState(false);
+  const [tutorialStep, setTutorialStep] = useState(0);
+
   useEffect(() => {
     if (!gameState) loadFromStorage();
   }, [gameState, loadFromStorage]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !gameState) return;
+    const seen = window.localStorage.getItem(TUTORIAL_STORAGE_KEY);
+    const isFreshGame =
+      gameState.roundNumber === 1 && gameState.currentPlayerIndex === 0 && gameState.actionsTakenThisTurn === 0 && gameState.tiles.length === 0;
+    if (!seen && isFreshGame) {
+      setTutorialActive(true);
+      setTutorialStep(0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function advanceTutorialIfOnStep(step: number) {
+    setTutorialStep((current) => (tutorialActive && current === step ? step + 1 : current));
+  }
+
+  function dismissTutorial() {
+    setTutorialActive(false);
+    if (typeof window !== 'undefined') window.localStorage.setItem(TUTORIAL_STORAGE_KEY, '1');
+  }
+
+  function restartTutorial() {
+    resetSelections();
+    setActiveTab('build');
+    setTutorialStep(0);
+    setTutorialActive(true);
+  }
 
   function resetSelections() {
     setBuildCardId(null);
@@ -261,6 +321,7 @@ export default function GamePage() {
   function changeTab(tab: TabId) {
     resetSelections();
     setActiveTab(tab);
+    if (tab === 'network') advanceTutorialIfOnStep(4);
   }
 
   if (!gameState) {
@@ -299,13 +360,17 @@ export default function GamePage() {
         if (!candidates) return;
         setBuildSlot({ regionId, slotId, candidates });
         setBuildType(candidates.length === 1 ? candidates[0]! : null);
+        advanceTutorialIfOnStep(2);
       };
     }
   } else if (activeTab === 'network') {
     if (networkCardId && !networkEdge) {
       const targets = networkTargetsForCard(gameState, currentPlayer, networkCardId);
       highlightedEdgeIds = targets;
-      onEdgeClick = (edge) => setNetworkEdge(edge);
+      onEdgeClick = (edge) => {
+        setNetworkEdge(edge);
+        advanceTutorialIfOnStep(6);
+      };
     }
   } else if (activeTab === 'sell') {
     selectableTileIds = new Set(
@@ -346,7 +411,12 @@ export default function GamePage() {
         <h1 className="app-title">
           <span className="mark">◆</span> SOVEREIGN
         </h1>
-        <span style={{ fontFamily: 'var(--font-display)', color: 'var(--text-muted)', fontSize: '0.75rem' }}>PIONIERSFASE</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <button className="tutorial-restart-btn" onClick={restartTutorial}>
+            Tutorial
+          </button>
+          <span style={{ fontFamily: 'var(--font-display)', color: 'var(--text-muted)', fontSize: '0.75rem' }}>PIONIERSFASE</span>
+        </div>
       </header>
 
       <HelpPanel />
@@ -416,7 +486,16 @@ export default function GamePage() {
                         ))}
                       </div>
                     )}
-                    <button className="btn btn-primary" disabled={!buildAction} onClick={() => buildAction && (dispatchAction(buildAction), resetSelections())}>
+                    <button
+                      className="btn btn-primary"
+                      disabled={!buildAction}
+                      onClick={() => {
+                        if (!buildAction) return;
+                        dispatchAction(buildAction);
+                        resetSelections();
+                        advanceTutorialIfOnStep(3);
+                      }}
+                    >
                       Bouw
                     </button>{' '}
                     <button className="btn" onClick={() => { setBuildSlot(null); setBuildType(null); }}>
@@ -442,7 +521,15 @@ export default function GamePage() {
                     <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
                       {regionName(networkEdge.regionA)} &harr; {regionName(networkEdge.regionB)}
                     </p>
-                    <button className="btn btn-primary" onClick={() => networkAction && (dispatchAction(networkAction), resetSelections())}>
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => {
+                        if (!networkAction) return;
+                        dispatchAction(networkAction);
+                        resetSelections();
+                        advanceTutorialIfOnStep(7);
+                      }}
+                    >
                       Leg link
                     </button>{' '}
                     <button className="btn" onClick={() => setNetworkEdge(null)}>
@@ -547,11 +634,13 @@ export default function GamePage() {
                       setBuildCardId(cardId);
                       setBuildSlot(null);
                       setBuildType(null);
+                      advanceTutorialIfOnStep(1);
                     }
                   : activeTab === 'network'
                     ? (cardId) => {
                         setNetworkCardId(cardId);
                         setNetworkEdge(null);
+                        advanceTutorialIfOnStep(5);
                       }
                     : activeTab === 'develop'
                       ? (cardId) => setDevelopCardId(cardId)
@@ -560,7 +649,15 @@ export default function GamePage() {
             />
           </div>
 
-          <button className="btn" style={{ width: '100%' }} onClick={() => { dispatchAction({ type: 'endTurn', playerId: currentPlayer.id }); resetSelections(); }}>
+          <button
+            className="btn"
+            style={{ width: '100%' }}
+            onClick={() => {
+              dispatchAction({ type: 'endTurn', playerId: currentPlayer.id });
+              resetSelections();
+              advanceTutorialIfOnStep(8);
+            }}
+          >
             Beurt beëindigen
           </button>
         </div>
@@ -582,6 +679,19 @@ export default function GamePage() {
           {JSON.stringify(gameState, null, 2)}
         </pre>
       </details>
+
+      {tutorialActive && (
+        <TutorialOverlay
+          step={tutorialStep}
+          total={TUTORIAL_STEPS.length}
+          title={TUTORIAL_STEPS[tutorialStep]!.title}
+          body={TUTORIAL_STEPS[tutorialStep]!.body}
+          showNext={tutorialStep === 0 || tutorialStep === TUTORIAL_STEPS.length - 1}
+          nextLabel={tutorialStep === TUTORIAL_STEPS.length - 1 ? 'Voltooien' : 'Volgende'}
+          onNext={() => (tutorialStep === TUTORIAL_STEPS.length - 1 ? dismissTutorial() : setTutorialStep(1))}
+          onSkip={dismissTutorial}
+        />
+      )}
     </main>
   );
 }

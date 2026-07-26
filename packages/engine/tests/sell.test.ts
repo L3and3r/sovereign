@@ -89,7 +89,7 @@ describe('applySell', () => {
     const result = applySell(state, { type: 'sell', playerId: 'p1', tileIds: ['tile-hp'] });
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.error).toMatch(/Netwerkhub sale capacity/);
+    expect(result.error).toMatch(/Netwerkhub-verkoopcapaciteit/);
   });
 
   it('rejects selling a tile owned by another player', () => {
@@ -102,7 +102,7 @@ describe('applySell', () => {
     const result = applySell(state, { type: 'sell', playerId: 'p1', tileIds: ['tile-hp'] });
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.error).toMatch(/not owned/);
+    expect(result.error).toMatch(/niet van deze speler/);
   });
 
   it('rejects selling an already-flipped tile', () => {
@@ -115,7 +115,7 @@ describe('applySell', () => {
     const result = applySell(state, { type: 'sell', playerId: 'p1', tileIds: ['tile-hp'] });
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.error).toMatch(/already been sold/);
+    expect(result.error).toMatch(/al verkocht/);
   });
 
   it('rejects non-sellable industry types', () => {
@@ -128,7 +128,7 @@ describe('applySell', () => {
     const result = applySell(state, { type: 'sell', playerId: 'p1', tileIds: ['tile-ec'] });
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.error).toMatch(/Only Handelspost/);
+    expect(result.error).toMatch(/Alleen Handelspost/);
   });
 
   it('rejects duplicate tile ids in one batch', () => {
@@ -136,7 +136,7 @@ describe('applySell', () => {
     const result = applySell(state, { type: 'sell', playerId: 'p1', tileIds: ['tile-hp', 'tile-hp'] });
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.error).toMatch(/Duplicate/);
+    expect(result.error).toMatch(/Dubbele/);
   });
 
   it('rejects when the shared demand track is exhausted', () => {
@@ -149,7 +149,7 @@ describe('applySell', () => {
     const result = applySell(state, { type: 'sell', playerId: 'p1', tileIds: ['tile-hp'] });
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.error).toMatch(/exhausted/);
+    expect(result.error).toMatch(/uitgeput/);
   });
 
   it('rejects when it is not the acting player\'s turn', () => {

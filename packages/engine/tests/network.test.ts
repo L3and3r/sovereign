@@ -47,7 +47,7 @@ describe('applyNetwork', () => {
     const result = applyNetwork(state, networkAction({ regionA: 'zoutmeer-vrijhaven', regionB: 'cryptavallei' }));
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.error).toMatch(/not adjacent/);
+    expect(result.error).toMatch(/grenzen niet aan elkaar/);
   });
 
   it('rejects building a duplicate link', () => {
@@ -63,7 +63,7 @@ describe('applyNetwork', () => {
     );
     expect(second.ok).toBe(false);
     if (second.ok) return;
-    expect(second.error).toMatch(/already exists/);
+    expect(second.error).toMatch(/bestaat al/);
   });
 
   it('rejects a region card that matches neither endpoint', () => {
@@ -74,7 +74,7 @@ describe('applyNetwork', () => {
     );
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.error).toMatch(/does not match/);
+    expect(result.error).toMatch(/komt niet overeen/);
   });
 
   it('rejects industry cards for building links', () => {
@@ -82,6 +82,6 @@ describe('applyNetwork', () => {
     const result = applyNetwork(state, networkAction({ cardId: 'card-industry-handelspost' }));
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.error).toMatch(/cannot be used/);
+    expect(result.error).toMatch(/kan niet gebruikt worden/);
   });
 });

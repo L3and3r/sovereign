@@ -21,18 +21,18 @@ export function applySell(state: GameState, action: SellAction): ActionResult {
 
   const player = getPlayer(state, action.playerId);
 
-  if (action.tileIds.length === 0) return fail(state, 'No tiles selected to sell');
-  if (new Set(action.tileIds).size !== action.tileIds.length) return fail(state, 'Duplicate tile in sell batch');
+  if (action.tileIds.length === 0) return fail(state, 'Geen tegels geselecteerd om te verkopen');
+  if (new Set(action.tileIds).size !== action.tileIds.length) return fail(state, 'Dubbele tegel in verkoopselectie');
 
   const tiles: IndustryTileInstance[] = [];
   for (const tileId of action.tileIds) {
     const tile = state.tiles.find((t) => t.id === tileId);
-    if (!tile) return fail(state, `Unknown tile: ${tileId}`);
-    if (tile.ownerId !== player.id) return fail(state, 'Tile is not owned by this player');
+    if (!tile) return fail(state, `Onbekende tegel: ${tileId}`);
+    if (tile.ownerId !== player.id) return fail(state, 'Tegel is niet van deze speler');
     if (tile.type !== 'handelspost' && tile.type !== 'mediaEnEducatie') {
-      return fail(state, 'Only Handelspost and Media & Educatie tiles can be sold');
+      return fail(state, 'Alleen Handelspost- en Media & Educatie-tegels kunnen verkocht worden');
     }
-    if (tile.flipped) return fail(state, 'Tile has already been sold');
+    if (tile.flipped) return fail(state, 'Tegel is al verkocht');
     tiles.push(tile);
   }
 
@@ -45,7 +45,7 @@ export function applySell(state: GameState, action: SellAction): ActionResult {
     .filter((t) => t.type === 'netwerkhub' && reachable.has(t.regionId) && (t.remainingOutput ?? 0) > 0)
     .sort((a, b) => (a.remainingOutput ?? 0) - (b.remainingOutput ?? 0));
   const totalCapacity = hubTiles.reduce((sum, t) => sum + (t.remainingOutput ?? 0), 0);
-  if (totalCapacity < tiles.length) return fail(state, 'Not enough connected Netwerkhub sale capacity');
+  if (totalCapacity < tiles.length) return fail(state, 'Onvoldoende verbonden Netwerkhub-verkoopcapaciteit');
 
   const energyCost = {
     sats: 0,
@@ -53,7 +53,7 @@ export function applySell(state: GameState, action: SellAction): ActionResult {
     bandwidth: 0,
   };
   const { totalSats } = resolveCostWithFallbackMarket(player, energyCost, state.market.energyPrice, state.market.bandwidthPrice);
-  if (player.sats < totalSats) return fail(state, 'Insufficient sats (including any market purchase of energy)');
+  if (player.sats < totalSats) return fail(state, 'Onvoldoende sats (inclusief eventuele marktaankoop van energie)');
 
   let handelspostIndex = state.market.handelspostDemand.nextIndex;
   const mediaDemand = state.market.mediaEnEducatieDemand[player.id]!;
@@ -65,13 +65,13 @@ export function applySell(state: GameState, action: SellAction): ActionResult {
     const levelDef = INDUSTRIES[tile.type].levels[tile.level - 1]!;
     if (tile.type === 'handelspost') {
       if (handelspostIndex >= state.market.handelspostDemand.rungs.length) {
-        return fail(state, 'Handelspost demand track is exhausted');
+        return fail(state, 'Handelspost-vraagbalk is uitgeput');
       }
       totalSatsGained += state.market.handelspostDemand.rungs[handelspostIndex]!;
       handelspostIndex += 1;
     } else {
       if (mediaIndex >= mediaDemand.rungs.length) {
-        return fail(state, 'Media & Educatie demand track is exhausted for this player');
+        return fail(state, 'Media & Educatie-vraagbalk is uitgeput voor deze speler');
       }
       totalSatsGained += mediaDemand.rungs[mediaIndex]!;
       mediaIndex += 1;
