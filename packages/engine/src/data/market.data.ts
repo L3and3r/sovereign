@@ -1,5 +1,9 @@
+// Trimmed ~12% (1.5.2026 balance pass): headless playtests showed Handelspost's sell-income
+// stacking on top of an already-competitive VP/cost ratio created a runaway snowball no other
+// industry could match (the Sell-first archetype averaged 2x the VP of the Build-first archetype
+// across 180 games) - see tests/balance-report.test.ts.
 export const HANDELSPOST_DEMAND_RUNGS: number[] = [
-  16, 16, 14, 14, 12, 12, 10, 10, 8, 8, 6, 6, 4, 4, 2, 2,
+  14, 14, 12, 12, 10, 10, 8, 8, 6, 6, 4, 4, 2, 2, 2, 2,
 ];
 
 export const MEDIA_EN_EDUCATIE_DEMAND_RUNGS: number[] = [6, 4, 2];

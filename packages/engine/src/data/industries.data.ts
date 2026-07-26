@@ -11,11 +11,15 @@ export const INDUSTRIES: Record<IndustryType, IndustryDef> = {
   energiecentrale: {
     type: 'energiecentrale',
     displayName: 'Energiecentrale',
+    // VP raised to match Infrastructuur's curve (1.5.2026 balance pass): both industries produce
+    // identical resource amounts per level, but Energiecentrale cost more sats for less VP at
+    // every level, making it a structurally dead pick (confirmed by headless playtests where the
+    // archetype prioritizing it still scored lowest of three - see tests/balance-report.test.ts).
     levels: [
-      { level: 1, cost: { sats: 5, energy: 0, bandwidth: 1 }, produces: { resource: 'energy', amount: 2 }, vp: 1, incomeBump: 1 },
-      { level: 2, cost: { sats: 7, energy: 0, bandwidth: 1 }, produces: { resource: 'energy', amount: 3 }, vp: 2, incomeBump: 1 },
-      { level: 3, cost: { sats: 10, energy: 0, bandwidth: 1 }, produces: { resource: 'energy', amount: 4 }, vp: 3, incomeBump: 2 },
-      { level: 4, cost: { sats: 14, energy: 0, bandwidth: 0 }, produces: { resource: 'energy', amount: 6 }, vp: 4, incomeBump: 2 },
+      { level: 1, cost: { sats: 5, energy: 0, bandwidth: 1 }, produces: { resource: 'energy', amount: 2 }, vp: 2, incomeBump: 1 },
+      { level: 2, cost: { sats: 7, energy: 0, bandwidth: 1 }, produces: { resource: 'energy', amount: 3 }, vp: 3, incomeBump: 1 },
+      { level: 3, cost: { sats: 10, energy: 0, bandwidth: 1 }, produces: { resource: 'energy', amount: 4 }, vp: 4, incomeBump: 2 },
+      { level: 4, cost: { sats: 14, energy: 0, bandwidth: 0 }, produces: { resource: 'energy', amount: 6 }, vp: 5, incomeBump: 2 },
     ],
   },
   infrastructuur: {

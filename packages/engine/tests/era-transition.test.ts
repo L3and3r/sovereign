@@ -121,8 +121,8 @@ describe('endNetwerkfase', () => {
     const result = endNetwerkfase(withEra1Score);
 
     expect(result.phase).toBe('gameEnded');
-    // p1: 5 (era 1) + 1 (era 2, energiecentrale lvl 1) + 1 link = 7
-    expect(result.finalScores!.p1).toEqual({ flippedVp: 6, linkVp: 1, total: 7 });
+    // p1: 5 (era 1) + 2 (era 2, energiecentrale lvl 1) + 1 link = 8
+    expect(result.finalScores!.p1).toEqual({ flippedVp: 7, linkVp: 1, total: 8 });
     // p2: 2 (era 1) + 0 (era 2) + 0 links = 2
     expect(result.finalScores!.p2).toEqual({ flippedVp: 2, linkVp: 0, total: 2 });
   });

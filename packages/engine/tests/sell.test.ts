@@ -33,8 +33,8 @@ describe('applySell', () => {
     if (!result.ok) return;
 
     const player = result.state.players.find((p) => p.id === 'p1')!;
-    // +16 sats from the first demand rung, -2 sats for the 1-energy fallback-market purchase
-    expect(player.sats).toBe(30 + 16 - 2);
+    // +14 sats from the first demand rung, -2 sats for the 1-energy fallback-market purchase
+    expect(player.sats).toBe(30 + 14 - 2);
     expect(player.incomePosition).toBe(10 + 2); // handelspost L1 incomeBump
 
     const soldTile = result.state.tiles.find((t) => t.id === 'tile-hp')!;
