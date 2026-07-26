@@ -12,7 +12,9 @@ import {
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { BoardSvg } from '../../components/board/BoardSvg';
+import { IndustryLegend } from '../../components/board/IndustryLegend';
 import { PlayerHandPanel } from '../../components/hand/PlayerHandPanel';
+import { HelpPanel } from '../../components/layout/HelpPanel';
 import { TurnBanner } from '../../components/layout/TurnBanner';
 import { DemandTrackView } from '../../components/market/DemandTrackView';
 import { IncomeTrackView } from '../../components/market/IncomeTrackView';
@@ -75,6 +77,17 @@ function PlayerSummary({ state }: { state: GameState }) {
   );
 }
 
+function cardUsableForBuild(cardId: string, regionId: string, industryType: string, player: PlayerState): boolean {
+  if (!player.hand.includes(cardId)) return false;
+  const def = CARD_DEFS_BY_ID[cardId];
+  if (!def) return false;
+  if (def.type === 'region') return def.regionId === regionId;
+  if (def.type === 'wildcardRegion') return player.wildcardsAvailable.region;
+  if (def.type === 'industry') return def.industryType === industryType;
+  if (def.type === 'wildcardIndustry') return player.wildcardsAvailable.industry;
+  return false;
+}
+
 function BuildForm({
   state,
   player,
@@ -86,48 +99,95 @@ function BuildForm({
 }) {
   const [regionId, setRegionId] = useState(state.regions[0]?.id ?? '');
   const [slotId, setSlotId] = useState('');
-  const [industryType, setIndustryType] = useState<IndustryType>('energiecentrale');
+  const [industryType, setIndustryType] = useState<IndustryType | ''>('');
   const [cardId, setCardId] = useState('');
   const region = state.regions.find((r) => r.id === regionId);
+  const slot = region?.slots.find((s) => s.id === slotId);
+  const allowedTypes = slot?.allowedTypes ?? [];
+
+  useEffect(() => {
+    setSlotId('');
+    setIndustryType('');
+    setCardId('');
+  }, [regionId]);
+
+  useEffect(() => {
+    if (!allowedTypes.includes(industryType as IndustryType)) {
+      setIndustryType(allowedTypes[0] ?? '');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slotId]);
+
+  useEffect(() => {
+    if (cardId && !cardUsableForBuild(cardId, regionId, industryType, player)) {
+      setCardId('');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [industryType, regionId, player.hand]);
+
+  const usableCards = player.hand.filter((cid) => cardUsableForBuild(cid, regionId, industryType, player));
 
   return (
     <fieldset style={{ marginTop: '1rem' }}>
-      <legend>Bouwen</legend>
-      <select value={regionId} onChange={(e) => setRegionId(e.target.value)}>
-        {state.regions.map((r) => (
-          <option key={r.id} value={r.id}>
-            {r.name}
-            {r.hasBorderMarker ? ' (grens)' : ''}
-          </option>
-        ))}
-      </select>{' '}
-      <select value={slotId} onChange={(e) => setSlotId(e.target.value)}>
-        <option value="">-- slot --</option>
-        {region?.slots.map((s) => (
-          <option key={s.id} value={s.id} disabled={!!s.occupiedByTileId}>
-            {s.id} ({s.allowedTypes.join('/')}){s.occupiedByTileId ? ' [bezet]' : ''}
-          </option>
-        ))}
-      </select>{' '}
-      <select value={industryType} onChange={(e) => setIndustryType(e.target.value as IndustryType)}>
-        {INDUSTRY_TYPES.map((t) => (
-          <option key={t} value={t}>
-            {t}
-          </option>
-        ))}
-      </select>{' '}
-      <select value={cardId} onChange={(e) => setCardId(e.target.value)}>
-        <option value="">-- kaart --</option>
-        {player.hand.map((cid, i) => (
-          <option key={`${cid}-${i}`} value={cid}>
-            {cardLabel(cid)}
-          </option>
-        ))}
-      </select>{' '}
+      <legend>1. Bouwen</legend>
+      <label>
+        Regio:{' '}
+        <select value={regionId} onChange={(e) => setRegionId(e.target.value)}>
+          {state.regions.map((r) => (
+            <option key={r.id} value={r.id}>
+              {r.name}
+              {r.hasBorderMarker ? ' (grens)' : ''}
+            </option>
+          ))}
+        </select>
+      </label>{' '}
+      <label>
+        Slot:{' '}
+        <select value={slotId} onChange={(e) => setSlotId(e.target.value)}>
+          <option value="">-- kies een leeg slot --</option>
+          {region?.slots.map((s) => (
+            <option key={s.id} value={s.id} disabled={!!s.occupiedByTileId}>
+              {s.id} ({s.allowedTypes.join('/')}){s.occupiedByTileId ? ' [bezet]' : ''}
+            </option>
+          ))}
+        </select>
+      </label>{' '}
+      <label>
+        Industrietype:{' '}
+        <select
+          value={industryType}
+          disabled={!slotId}
+          onChange={(e) => setIndustryType(e.target.value as IndustryType)}
+        >
+          {allowedTypes.map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
+        </select>
+      </label>{' '}
+      <label>
+        Kaart:{' '}
+        <select value={cardId} disabled={!industryType} onChange={(e) => setCardId(e.target.value)}>
+          <option value="">-- kies een passende kaart --</option>
+          {usableCards.map((cid, i) => (
+            <option key={`${cid}-${i}`} value={cid}>
+              {cardLabel(cid)}
+            </option>
+          ))}
+        </select>
+      </label>{' '}
       <button
         disabled={!slotId || !cardId}
         onClick={() =>
-          dispatchAction({ type: 'build', playerId: player.id, regionId, slotId, industryType, cardId })
+          dispatchAction({
+            type: 'build',
+            playerId: player.id,
+            regionId,
+            slotId,
+            industryType: industryType as IndustryType,
+            cardId,
+          })
         }
       >
         Bouw
@@ -136,12 +196,21 @@ function BuildForm({
         state={state}
         action={
           slotId && cardId
-            ? { type: 'build', playerId: player.id, regionId, slotId, industryType, cardId }
+            ? { type: 'build', playerId: player.id, regionId, slotId, industryType: industryType as IndustryType, cardId }
             : null
         }
       />
     </fieldset>
   );
+}
+
+function cardUsableForNetwork(cardId: string, regionA: string, regionB: string, player: PlayerState): boolean {
+  if (!player.hand.includes(cardId)) return false;
+  const def = CARD_DEFS_BY_ID[cardId];
+  if (!def) return false;
+  if (def.type === 'region') return def.regionId === regionA || def.regionId === regionB;
+  if (def.type === 'wildcardRegion') return player.wildcardsAvailable.region;
+  return false;
 }
 
 function NetworkForm({
@@ -154,44 +223,81 @@ function NetworkForm({
   dispatchAction: (action: GameAction) => void;
 }) {
   const [regionA, setRegionA] = useState(state.regions[0]?.id ?? '');
-  const [regionB, setRegionB] = useState(state.regions[1]?.id ?? '');
+  const [regionB, setRegionB] = useState('');
   const [cardId, setCardId] = useState('');
+  const regionAObj = state.regions.find((r) => r.id === regionA);
+  const alreadyLinkedIds = new Set(
+    state.links
+      .filter((l) => l.regionA === regionA || l.regionB === regionA)
+      .map((l) => (l.regionA === regionA ? l.regionB : l.regionA)),
+  );
+  const candidateRegionBs = (regionAObj?.adjacentRegionIds ?? []).filter((id) => !alreadyLinkedIds.has(id));
+
+  useEffect(() => {
+    setRegionB('');
+    setCardId('');
+  }, [regionA]);
+
+  useEffect(() => {
+    if (cardId && regionB && !cardUsableForNetwork(cardId, regionA, regionB, player)) {
+      setCardId('');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [regionB, player.hand]);
+
+  const usableCards = regionB ? player.hand.filter((cid) => cardUsableForNetwork(cid, regionA, regionB, player)) : [];
 
   return (
     <fieldset style={{ marginTop: '1rem' }}>
-      <legend>Netwerken (Link bouwen)</legend>
-      <select value={regionA} onChange={(e) => setRegionA(e.target.value)}>
-        {state.regions.map((r) => (
-          <option key={r.id} value={r.id}>
-            {r.name}
-          </option>
-        ))}
-      </select>{' '}
-      <select value={regionB} onChange={(e) => setRegionB(e.target.value)}>
-        {state.regions.map((r) => (
-          <option key={r.id} value={r.id}>
-            {r.name}
-          </option>
-        ))}
-      </select>{' '}
-      <select value={cardId} onChange={(e) => setCardId(e.target.value)}>
-        <option value="">-- kaart --</option>
-        {player.hand.map((cid, i) => (
-          <option key={`${cid}-${i}`} value={cid}>
-            {cardLabel(cid)}
-          </option>
-        ))}
-      </select>{' '}
+      <legend>2. Netwerken (Link bouwen)</legend>
+      <label>
+        Van regio:{' '}
+        <select value={regionA} onChange={(e) => setRegionA(e.target.value)}>
+          {state.regions.map((r) => (
+            <option key={r.id} value={r.id}>
+              {r.name}
+            </option>
+          ))}
+        </select>
+      </label>{' '}
+      <label>
+        Naar aangrenzende regio:{' '}
+        <select value={regionB} onChange={(e) => setRegionB(e.target.value)}>
+          <option value="">-- kies --</option>
+          {candidateRegionBs.map((id) => {
+            const r = state.regions.find((region) => region.id === id);
+            return (
+              <option key={id} value={id}>
+                {r?.name ?? id}
+              </option>
+            );
+          })}
+        </select>
+      </label>{' '}
+      <label>
+        Kaart:{' '}
+        <select value={cardId} disabled={!regionB} onChange={(e) => setCardId(e.target.value)}>
+          <option value="">-- kies een passende kaart --</option>
+          {usableCards.map((cid, i) => (
+            <option key={`${cid}-${i}`} value={cid}>
+              {cardLabel(cid)}
+            </option>
+          ))}
+        </select>
+      </label>{' '}
       <button
-        disabled={!cardId || regionA === regionB}
+        disabled={!cardId || !regionB}
         onClick={() => dispatchAction({ type: 'network', playerId: player.id, regionA, regionB, cardId })}
       >
         Leg link
       </button>
       <ActionPreview
         state={state}
-        action={cardId && regionA !== regionB ? { type: 'network', playerId: player.id, regionA, regionB, cardId } : null}
+        action={cardId && regionB ? { type: 'network', playerId: player.id, regionA, regionB, cardId } : null}
       />
+      {candidateRegionBs.length === 0 && (
+        <p style={{ fontSize: 13, color: '#999' }}>Geen aangrenzende regio&apos;s meer beschikbaar vanaf hier.</p>
+      )}
     </fieldset>
   );
 }
@@ -208,9 +314,15 @@ function DevelopForm({
   const [industryType, setIndustryType] = useState<IndustryType>('energiecentrale');
   const [cardId, setCardId] = useState('');
 
+  useEffect(() => {
+    if (cardId && !player.hand.includes(cardId)) {
+      setCardId('');
+    }
+  }, [player.hand, cardId]);
+
   return (
     <fieldset style={{ marginTop: '1rem' }}>
-      <legend>Ontwikkelen</legend>
+      <legend>3. Ontwikkelen</legend>
       <select value={industryType} onChange={(e) => setIndustryType(e.target.value as IndustryType)}>
         {INDUSTRY_TYPES.map((t) => (
           <option key={t} value={t}>
@@ -260,7 +372,7 @@ function SellForm({
 
   return (
     <fieldset style={{ marginTop: '1rem' }}>
-      <legend>Verkopen</legend>
+      <legend>4. Verkopen</legend>
       {sellableTiles.length === 0 && <p>Geen verkoopbare tegels.</p>}
       {sellableTiles.map((tile) => {
         const region = state.regions.find((r) => r.id === tile.regionId);
@@ -344,10 +456,12 @@ export default function GamePage() {
   return (
     <main style={{ padding: '2rem', fontFamily: 'sans-serif' }}>
       <h1>Sovereign — Pioniersfase</h1>
+      <HelpPanel />
       <TurnBanner state={gameState} />
       {lastError && <p style={{ color: 'red' }}>Fout: {lastError}</p>}
 
       <BoardSvg state={gameState} />
+      <IndustryLegend />
 
       <PlayerSummary state={gameState} />
       <PlayerHandPanel player={currentPlayer} />
@@ -360,7 +474,7 @@ export default function GamePage() {
       <SellForm state={gameState} player={currentPlayer} dispatchAction={dispatchAction} />
 
       <fieldset style={{ marginTop: '1rem' }}>
-        <legend>Overig</legend>
+        <legend>5. Overig</legend>
         <button onClick={() => dispatchAction({ type: 'loan', playerId: currentPlayer.id })}>
           Leen ({gameState.market.loanPoolRemaining} over)
         </button>{' '}
