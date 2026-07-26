@@ -159,6 +159,7 @@ function BuildForm({
           disabled={!slotId}
           onChange={(e) => setIndustryType(e.target.value as IndustryType)}
         >
+          {!slotId && <option value="">-- kies eerst een slot --</option>}
           {allowedTypes.map((t) => (
             <option key={t} value={t}>
               {t}
@@ -169,7 +170,9 @@ function BuildForm({
       <label>
         Kaart:{' '}
         <select value={cardId} disabled={!industryType} onChange={(e) => setCardId(e.target.value)}>
-          <option value="">-- kies een passende kaart --</option>
+          <option value="">
+            {!industryType ? '-- kies eerst een slot --' : '-- kies een passende kaart --'}
+          </option>
           {usableCards.map((cid, i) => (
             <option key={`${cid}-${i}`} value={cid}>
               {cardLabel(cid)}
@@ -277,7 +280,7 @@ function NetworkForm({
       <label>
         Kaart:{' '}
         <select value={cardId} disabled={!regionB} onChange={(e) => setCardId(e.target.value)}>
-          <option value="">-- kies een passende kaart --</option>
+          <option value="">{!regionB ? '-- kies eerst een regio --' : '-- kies een passende kaart --'}</option>
           {usableCards.map((cid, i) => (
             <option key={`${cid}-${i}`} value={cid}>
               {cardLabel(cid)}
