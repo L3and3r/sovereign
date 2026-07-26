@@ -1,4 +1,5 @@
 import { pickAutomaAction, pickAutomaReaction } from '../../src/automa/automa';
+import type { AutomaActionKind } from '../../src/automa/automaConfig';
 import { CARD_DEFS_BY_ID } from '../../src/data/cards.data';
 import { createInitialState } from '../../src/engine/createGame';
 import { dispatch } from '../../src/engine/reducer';
@@ -181,6 +182,24 @@ function playOneAction(
 
 export interface SimulationStats {
   actionCounts: Record<PlayerId, Record<BotActionKind, number>>;
+  automaActionCounts: Record<PlayerId, Record<AutomaActionKind, number>>;
+  confiscateCounts: Record<PlayerId, number>;
+  passReactionCounts: Record<PlayerId, number>;
+}
+
+function automaActionKindFromAction(action: GameAction): AutomaActionKind | null {
+  switch (action.type) {
+    case 'sell':
+    case 'build':
+    case 'network':
+    case 'develop':
+    case 'loan':
+      return action.type;
+    case 'automaUndercut':
+      return 'undercut';
+    default:
+      return null;
+  }
 }
 
 export interface SimulationResult {
@@ -213,15 +232,25 @@ export function simulateGame(
   let iterations = 0;
 
   const actionCounts: Record<PlayerId, Record<BotActionKind, number>> = {};
+  const automaActionCounts: Record<PlayerId, Record<AutomaActionKind, number>> = {};
+  const confiscateCounts: Record<PlayerId, number> = {};
+  const passReactionCounts: Record<PlayerId, number> = {};
   for (const player of state.players) {
     actionCounts[player.id] = { sell: 0, build: 0, network: 0, develop: 0, loan: 0 };
+    automaActionCounts[player.id] = { sell: 0, build: 0, network: 0, develop: 0, loan: 0, undercut: 0 };
+    confiscateCounts[player.id] = 0;
+    passReactionCounts[player.id] = 0;
   }
 
   while ((state.phase === 'playing' || state.phase === 'eraTransition') && iterations < MAX_ITERATIONS) {
     iterations += 1;
 
     if (state.phase === 'eraTransition') {
-      const result = dispatch(state, { type: 'startNextEra' });
+      // Deterministic (not Date.now()) so repeated runs of the same seed reproduce the same
+      // game - otherwise era-2's deck shuffle would be genuinely random every run, making
+      // balance-report output non-reproducible.
+      const eraSeed = seed + state.roundNumber * 999983;
+      const result = dispatch(state, { type: 'startNextEra', seed: eraSeed });
       if (!result.ok) throw new Error(`startNextEra unexpectedly failed: ${result.error}`);
       state = result.state;
       continue;
@@ -236,6 +265,8 @@ export function simulateGame(
       const result = dispatch(state, reactionAction);
       if (!result.ok) throw new Error(`${reactionAction.type} unexpectedly failed: ${result.error}`);
       state = result.state;
+      if (reactionAction.type === 'confiscate') confiscateCounts[reactingPlayerId]! += 1;
+      else passReactionCounts[reactingPlayerId]! += 1;
       continue;
     }
 
@@ -257,6 +288,8 @@ export function simulateGame(
         const result = dispatch(state, automaAction);
         if (!result.ok) throw new Error(`automa action unexpectedly failed: ${result.error}`);
         state = result.state;
+        const kind = automaActionKindFromAction(automaAction);
+        if (kind) automaActionCounts[player.id]![kind] += 1;
         continue;
       }
     } else {
@@ -273,5 +306,5 @@ export function simulateGame(
     state = endResult.state;
   }
 
-  return { state, iterations, stats: { actionCounts } };
+  return { state, iterations, stats: { actionCounts, automaActionCounts, confiscateCounts, passReactionCounts } };
 }

@@ -524,7 +524,7 @@ export default function GamePage() {
     return (
       <EraEndSummary
         state={gameState}
-        onStartNextEra={() => dispatchAction({ type: 'startNextEra' })}
+        onStartNextEra={() => dispatchAction({ type: 'startNextEra', seed: Date.now() })}
         onNewGame={() => {
           resetGame();
           router.push('/');

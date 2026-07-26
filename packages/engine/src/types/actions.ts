@@ -16,7 +16,7 @@ export type GameAction =
   | { type: 'sell'; playerId: PlayerId; tileIds: TileId[] }
   | { type: 'loan'; playerId: PlayerId }
   | { type: 'endTurn'; playerId: PlayerId }
-  | { type: 'startNextEra' }
+  | { type: 'startNextEra'; seed: number }
   | { type: 'confiscate'; playerId: PlayerId; cardId: CardId; targetTileId: TileId }
   | { type: 'passReaction'; playerId: PlayerId }
   | { type: 'automaUndercut'; playerId: PlayerId };

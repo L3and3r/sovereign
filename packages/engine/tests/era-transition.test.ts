@@ -45,7 +45,7 @@ describe('endPioniersfase', () => {
 describe('applyStartNextEra', () => {
   it('rejects when no era transition is active', () => {
     const state = makeTestState();
-    const result = applyStartNextEra(state, { type: 'startNextEra' });
+    const result = applyStartNextEra(state, { type: 'startNextEra', seed: 1 });
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.error).toMatch(/tijdperkovergang/);
@@ -71,7 +71,7 @@ describe('applyStartNextEra', () => {
       }),
     );
 
-    const result = applyStartNextEra(transitioned, { type: 'startNextEra' }, 999);
+    const result = applyStartNextEra(transitioned, { type: 'startNextEra', seed: 999 });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 

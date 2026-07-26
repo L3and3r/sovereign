@@ -11,14 +11,10 @@ function fail(state: GameState, error: string): ActionResult {
   return { ok: false, error, state };
 }
 
-export function applyStartNextEra(
-  state: GameState,
-  _action: StartNextEraAction,
-  seed: number = Date.now(),
-): ActionResult {
+export function applyStartNextEra(state: GameState, action: StartNextEraAction): ActionResult {
   if (state.phase !== 'eraTransition') return fail(state, 'Er is geen tijdperkovergang actief');
 
-  const deck = shuffle(buildDeckCardIds(), createRng(seed));
+  const deck = shuffle(buildDeckCardIds(), createRng(action.seed));
 
   const players = state.players.map((player) => {
     const hand = deck.splice(0, STARTING_HAND_SIZE - 2);
