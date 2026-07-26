@@ -26,7 +26,11 @@ export function BoardSvg({ state }: { state: GameState }) {
           <filter id="tile-shadow" x="-80%" y="-80%" width="260%" height="260%">
             <feDropShadow dx="0" dy="1.2" stdDeviation="1" floodOpacity="0.55" />
           </filter>
-          <filter id="link-glow" x="-40%" y="-40%" width="180%" height="180%">
+          {/* userSpaceOnUse + fixed bounds: perfectly horizontal/vertical links have a
+              zero-width or zero-height bounding box, which collapses the default
+              percentage-based (objectBoundingBox) filter region to nothing and hides
+              the line entirely. */}
+          <filter id="link-glow" filterUnits="userSpaceOnUse" x="-20" y="-20" width="840" height="590">
             <feDropShadow dx="0" dy="0" stdDeviation="2.5" floodOpacity="0.7" />
           </filter>
         </defs>
