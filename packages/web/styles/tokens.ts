@@ -19,4 +19,5 @@ export const CARD_FRAME: Record<string, { bg: string; bgDark: string; glyph: str
   industry: { bg: '#2a5c3a', bgDark: '#12271a', glyph: '' },
   wildcardRegion: { bg: '#7a2333', bgDark: '#33101a', glyph: '★' },
   wildcardIndustry: { bg: '#7a5410', bgDark: '#33220a', glyph: '★' },
+  dreiging: { bg: '#5c1620', bgDark: '#22070c', glyph: '⚑' },
 };

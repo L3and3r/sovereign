@@ -34,10 +34,17 @@ export function BoardSvg({
             <stop offset="55%" stopColor="#0f141a" />
             <stop offset="100%" stopColor="#0a0d11" />
           </radialGradient>
-          <radialGradient id="region-fill" cx="35%" cy="30%" r="75%">
-            <stop offset="0%" stopColor="#232c37" />
-            <stop offset="100%" stopColor="#171d24" />
+          {/* Regions read as struck brass sat-coins, not generic wireframe nodes — the game's
+              currency is literally coin-shaped, so the board leans into that rather than an
+              abstract network diagram. */}
+          <radialGradient id="region-fill" cx="35%" cy="28%" r="75%">
+            <stop offset="0%" stopColor="#7a5b34" />
+            <stop offset="45%" stopColor="#4f3a20" />
+            <stop offset="100%" stopColor="#2c2013" />
           </radialGradient>
+          <pattern id="ledger-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M40 0 L0 0 0 40" fill="none" stroke="#e8e6e1" strokeWidth="1" opacity="0.035" />
+          </pattern>
           <filter id="region-shadow" x="-60%" y="-60%" width="220%" height="220%">
             <feDropShadow dx="0" dy="3" stdDeviation="3" floodOpacity="0.55" />
           </filter>
@@ -54,6 +61,7 @@ export function BoardSvg({
         </defs>
 
         <rect x={0} y={0} width={800} height={550} fill="url(#board-bg)" />
+        <rect x={0} y={0} width={800} height={550} fill="url(#ledger-grid)" />
 
         {MAP_EDGES.map((edge) => {
           const a = REGION_POSITIONS[edge.regionA];

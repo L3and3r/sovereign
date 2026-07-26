@@ -20,15 +20,42 @@ export function RegionNode({
   selectedTileIds?: Set<string>;
   onTileClick?: (tileId: string) => void;
 }) {
+  const borderMarkerSealAngle = -Math.PI / 6; // between the top slot and the lower-right slot
+
   return (
     <g transform={`translate(${position.x}, ${position.y})`} filter="url(#region-shadow)">
+      {/* Struck brass coin plate: regions read as sat-coins, not abstract network nodes. */}
       <circle
         r={46}
         fill="url(#region-fill)"
-        stroke={region.hasBorderMarker ? '#e5484d' : '#4a5568'}
+        stroke={region.hasBorderMarker ? '#e5484d' : '#5a4526'}
         strokeWidth={region.hasBorderMarker ? 3 : 1.5}
       />
-      <circle r={46} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={1} transform="translate(-1,-1)" />
+      {/* Milled/reeded coin edge */}
+      {Array.from({ length: 40 }).map((_, i) => {
+        const angle = (i / 40) * Math.PI * 2;
+        return (
+          <line
+            key={i}
+            x1={Math.cos(angle) * 47}
+            y1={Math.sin(angle) * 47}
+            x2={Math.cos(angle) * 50}
+            y2={Math.sin(angle) * 50}
+            stroke="rgba(0,0,0,0.4)"
+            strokeWidth={1.1}
+          />
+        );
+      })}
+      {/* Engraved inner rim */}
+      <circle r={41} fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth={1} />
+      <circle r={39} fill="none" stroke="rgba(0,0,0,0.25)" strokeWidth={1} />
+      {region.hasBorderMarker && (
+        <g transform={`translate(${Math.cos(borderMarkerSealAngle) * 34}, ${Math.sin(borderMarkerSealAngle) * 34})`}>
+          <circle r={7.5} fill="#5a1119" stroke="#e5484d" strokeWidth={1.2} />
+          <line x1={-3.2} y1={0} x2={3.2} y2={0} stroke="#f2a6ab" strokeWidth={1} />
+          <line x1={0} y1={-3.2} x2={0} y2={3.2} stroke="#f2a6ab" strokeWidth={1} />
+        </g>
+      )}
       <text
         y={-54}
         textAnchor="middle"
