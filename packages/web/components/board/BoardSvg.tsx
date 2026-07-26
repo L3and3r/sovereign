@@ -8,7 +8,7 @@ export function BoardSvg({ state }: { state: GameState }) {
   const playerIndexById = new Map(state.players.map((p, i) => [p.id, i]));
 
   return (
-    <svg viewBox="0 0 800 550" width="100%" style={{ maxWidth: 800, background: '#11141a', borderRadius: 8 }}>
+    <svg viewBox="0 0 800 550" width="100%" style={{ maxWidth: 800, background: '#0e1217', borderRadius: 12 }}>
       {MAP_EDGES.map((edge) => {
         const a = REGION_POSITIONS[edge.regionA];
         const b = REGION_POSITIONS[edge.regionB];

@@ -2,28 +2,26 @@ import type { DemandTrack } from '@sovereign/engine';
 
 export function DemandTrackView({ track, label }: { track: DemandTrack; label: string }) {
   return (
-    <div style={{ marginTop: '0.5rem' }}>
-      <strong>{label}:</strong>{' '}
-      <span style={{ fontFamily: 'monospace' }}>
+    <div>
+      <p className="panel-title" style={{ marginBottom: '0.4rem' }}>
+        {label}
+      </p>
+      <div>
         {track.rungs.map((value, i) => (
           <span
             key={i}
+            className="track-rung"
             style={{
-              display: 'inline-block',
-              width: 24,
-              textAlign: 'center',
-              padding: '2px 0',
-              margin: '0 1px',
-              borderRadius: 3,
-              background: i < track.nextIndex ? '#2a2f3a' : '#4caf50',
-              color: i < track.nextIndex ? '#666' : '#0a0a0a',
+              background: i < track.nextIndex ? 'var(--surface-raised)' : 'var(--accent-soft)',
+              color: i < track.nextIndex ? 'var(--text-faint)' : 'var(--accent)',
               textDecoration: i < track.nextIndex ? 'line-through' : 'none',
+              border: `1px solid ${i < track.nextIndex ? 'var(--border)' : 'var(--accent)'}`,
             }}
           >
             {value}
           </span>
         ))}
-      </span>
+      </div>
     </div>
   );
 }

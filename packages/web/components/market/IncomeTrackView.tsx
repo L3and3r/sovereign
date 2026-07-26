@@ -7,9 +7,11 @@ export function IncomeTrackView({ players }: { players: PlayerState[] }) {
   const range = max - min;
 
   return (
-    <div style={{ marginTop: '0.5rem' }}>
-      <strong>Inkomenstrack:</strong>
-      <div style={{ position: 'relative', height: 28, background: '#1b1f27', borderRadius: 4, marginTop: 4 }}>
+    <div>
+      <p className="panel-title" style={{ marginBottom: '0.4rem' }}>
+        Inkomenstrack
+      </p>
+      <div style={{ position: 'relative', height: 24, background: 'var(--surface-raised)', borderRadius: 999, border: '1px solid var(--border)' }}>
         {players.map((p, i) => {
           const pct = ((p.incomePosition - min) / range) * 100;
           return (
@@ -24,7 +26,7 @@ export function IncomeTrackView({ players }: { players: PlayerState[] }) {
                 height: 12,
                 borderRadius: '50%',
                 background: colorForPlayerIndex(i),
-                border: '2px solid #fff',
+                border: '2px solid var(--bg)',
               }}
             />
           );

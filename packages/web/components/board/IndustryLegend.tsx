@@ -12,14 +12,14 @@ const LABELS: Record<string, string> = {
 
 export function IndustryLegend() {
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginTop: '0.5rem', fontSize: 12 }}>
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.85rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
       {INDUSTRY_TYPES.map((type) => (
-        <span key={type} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <span key={type} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <span
             style={{
               display: 'inline-block',
-              width: 12,
-              height: 12,
+              width: 10,
+              height: 10,
               borderRadius: 3,
               background: INDUSTRY_COLORS[type] ?? '#999',
             }}

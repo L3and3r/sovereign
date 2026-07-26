@@ -18,25 +18,39 @@ export default function HomePage() {
   }
 
   return (
-    <main style={{ padding: '2rem', maxWidth: 480, fontFamily: 'sans-serif' }}>
-      <h1>Sovereign</h1>
-      <p>Pioniersfase — lokaal pass-and-play (2-4 spelers)</p>
+    <main className="page" style={{ maxWidth: 520 }}>
+      <div style={{ marginBottom: '2.5rem' }}>
+        <h1 className="app-title" style={{ fontSize: '2.25rem' }}>
+          <span className="mark">◆</span> SOVEREIGN
+        </h1>
+        <p style={{ color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+          Pioniersfase — lokaal pass-and-play voor 2-4 spelers.
+        </p>
+      </div>
 
-      <label style={{ display: 'block', marginTop: '1rem' }}>
-        Aantal spelers:{' '}
-        <select value={playerCount} onChange={(e) => setPlayerCount(Number(e.target.value))}>
-          <option value={2}>2</option>
-          <option value={3}>3</option>
-          <option value={4}>4</option>
-        </select>
-      </label>
+      <div className="panel stack">
+        <div className="field">
+          <label htmlFor="player-count">Aantal spelers</label>
+          <select
+            id="player-count"
+            className="select"
+            value={playerCount}
+            onChange={(e) => setPlayerCount(Number(e.target.value))}
+          >
+            <option value={2}>2</option>
+            <option value={3}>3</option>
+            <option value={4}>4</option>
+          </select>
+        </div>
 
-      <div style={{ marginTop: '1rem' }}>
-        {names.slice(0, playerCount).map((name, i) => (
-          <div key={i} style={{ marginBottom: '0.5rem' }}>
-            <label>
-              Speler {i + 1}:{' '}
+        <div className="stack" style={{ gap: '0.6rem' }}>
+          {names.slice(0, playerCount).map((name, i) => (
+            <div className="field" key={i}>
+              <label htmlFor={`player-${i}`}>Speler {i + 1}</label>
               <input
+                id={`player-${i}`}
+                type="text"
+                className="select"
                 value={name}
                 onChange={(e) => {
                   const next = [...names];
@@ -44,14 +58,14 @@ export default function HomePage() {
                   setNames(next);
                 }}
               />
-            </label>
-          </div>
-        ))}
-      </div>
+            </div>
+          ))}
+        </div>
 
-      <button style={{ marginTop: '1rem' }} onClick={handleStart}>
-        Start spel
-      </button>
+        <button className="btn btn-primary" style={{ marginTop: '0.5rem' }} onClick={handleStart}>
+          Start spel
+        </button>
+      </div>
     </main>
   );
 }

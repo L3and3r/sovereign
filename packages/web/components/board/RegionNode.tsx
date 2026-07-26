@@ -14,11 +14,18 @@ export function RegionNode({
     <g transform={`translate(${position.x}, ${position.y})`}>
       <circle
         r={46}
-        fill="#1b1f27"
-        stroke={region.hasBorderMarker ? '#e63946' : '#4a4f5a'}
+        fill="#1c232b"
+        stroke={region.hasBorderMarker ? '#e5484d' : '#3a4451'}
         strokeWidth={region.hasBorderMarker ? 3 : 1.5}
       />
-      <text y={-54} textAnchor="middle" fontSize={12} fill="#e5e7eb">
+      <text
+        y={-54}
+        textAnchor="middle"
+        fontSize={11}
+        fontFamily="var(--font-mono), ui-monospace, monospace"
+        letterSpacing="0.02em"
+        fill="#e8e6e1"
+      >
         {region.name}
       </text>
       {region.slots.map((slot, i) => {
@@ -31,7 +38,7 @@ export function RegionNode({
             {tile ? (
               <IndustryTileIcon type={tile.type} level={tile.level} flipped={tile.flipped} />
             ) : (
-              <rect x={-11} y={-11} width={22} height={22} rx={4} fill="none" stroke="#4a4f5a" strokeDasharray="3 2" />
+              <rect x={-11} y={-11} width={22} height={22} rx={4} fill="none" stroke="#3a4451" strokeDasharray="3 2" />
             )}
           </g>
         );

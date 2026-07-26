@@ -4,10 +4,15 @@ import { colorForPlayerIndex } from '../../styles/tokens';
 export function TurnBanner({ state }: { state: GameState }) {
   const player = state.players[state.currentPlayerIndex]!;
   return (
-    <p>
-      Ronde {state.roundNumber} — Aan zet:{' '}
-      <strong style={{ color: colorForPlayerIndex(state.currentPlayerIndex) }}>{player.name}</strong> (
-      {state.actionsTakenThisTurn}/2 acties, {state.deck.length} kaarten in stapel)
-    </p>
+    <div className="turn-banner">
+      <span>
+        RONDE {String(state.roundNumber).padStart(2, '0')} — AAN ZET:{' '}
+        <strong style={{ color: colorForPlayerIndex(state.currentPlayerIndex) }}>{player.name}</strong>
+      </span>
+      <span className="turn-cursor" style={{ color: colorForPlayerIndex(state.currentPlayerIndex) }} />
+      <span style={{ marginLeft: 'auto' }}>
+        {state.actionsTakenThisTurn}/2 acties &middot; {state.deck.length} kaarten in stapel
+      </span>
+    </div>
   );
 }

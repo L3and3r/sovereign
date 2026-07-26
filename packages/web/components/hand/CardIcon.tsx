@@ -1,10 +1,10 @@
 import { CARD_DEFS_BY_ID } from '@sovereign/engine';
 
 const TYPE_COLORS: Record<string, string> = {
-  region: '#457b9d',
+  region: '#5b8def',
   industry: '#4caf50',
-  wildcardRegion: '#e63946',
-  wildcardIndustry: '#f2b134',
+  wildcardRegion: '#f2545b',
+  wildcardIndustry: '#f7931a',
 };
 
 export function CardIcon({ cardId, selected = false }: { cardId: string; selected?: boolean }) {
@@ -13,15 +13,10 @@ export function CardIcon({ cardId, selected = false }: { cardId: string; selecte
 
   return (
     <span
+      className="card-chip"
       style={{
-        display: 'inline-block',
-        padding: '2px 8px',
-        margin: '2px',
-        borderRadius: 4,
-        fontSize: 12,
-        color: '#fff',
         background: color,
-        border: selected ? '2px solid #fff' : '2px solid transparent',
+        boxShadow: selected ? '0 0 0 2px var(--text)' : 'none',
       }}
       title={def?.type}
     >
