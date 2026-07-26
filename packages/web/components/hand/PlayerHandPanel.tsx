@@ -4,10 +4,10 @@ import { CardIcon } from './CardIcon';
 export function PlayerHandPanel({ player }: { player: PlayerState }) {
   return (
     <div>
-      <p className="panel-title" style={{ marginBottom: '0.4rem' }}>
+      <p className="panel-title" style={{ marginBottom: '0.2rem' }}>
         Hand van {player.name}
       </p>
-      <div>
+      <div className="hand-row">
         {player.hand.map((cardId, i) => (
           <CardIcon key={`${cardId}-${i}`} cardId={cardId} />
         ))}

@@ -16,9 +16,11 @@ export function LinkEdge({
       y1={a.y}
       x2={b.x}
       y2={b.y}
-      stroke={built ? colorForPlayerIndex(ownerIndex) : '#3a3f4a'}
+      stroke={built ? colorForPlayerIndex(ownerIndex) : '#3a4451'}
       strokeWidth={built ? 4 : 1.5}
-      strokeDasharray={built ? undefined : '4 4'}
+      strokeLinecap="round"
+      strokeDasharray={built ? undefined : '4 5'}
+      filter={built ? 'url(#link-glow)' : undefined}
     />
   );
 }

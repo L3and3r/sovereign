@@ -49,26 +49,43 @@ function ActionPreview({ state, action }: { state: GameState; action: GameAction
   );
 }
 
+const RESOURCE_GEMS = {
+  sats: '#f7931a',
+  energy: '#ffd700',
+  bandwidth: '#3fb8af',
+} as const;
+
 function PlayerRoster({ state }: { state: GameState }) {
   return (
-    <div className="stack" style={{ gap: '0.55rem' }}>
+    <div className="stack" style={{ gap: '0.7rem' }}>
       {state.players.map((p, i) => (
         <div
           key={p.id}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.55rem',
-            fontSize: '0.82rem',
-            fontWeight: i === state.currentPlayerIndex ? 700 : 400,
-            color: i === state.currentPlayerIndex ? 'var(--text)' : 'var(--text-muted)',
-          }}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', opacity: i === state.currentPlayerIndex ? 1 : 0.55 }}
         >
-          <span className="player-dot" style={{ background: colorForPlayerIndex(i) }} />
-          <span style={{ minWidth: 66 }}>{p.name}</span>
-          <span style={{ fontFamily: 'var(--font-display)', fontSize: '0.78rem' }}>
-            {p.sats}s · {p.energy}e · {p.bandwidth}b · inc {p.incomePosition} · {p.hand.length} krt
+          <span className="player-portrait" style={{ background: colorForPlayerIndex(i) }}>
+            {p.name.charAt(0).toUpperCase()}
           </span>
+          <div>
+            <div style={{ fontSize: '0.85rem', fontWeight: i === state.currentPlayerIndex ? 700 : 400 }}>{p.name}</div>
+            <div className="resource-row">
+              <span className="resource-crystal">
+                <span className="gem" style={{ background: RESOURCE_GEMS.sats }} />
+                {p.sats}
+              </span>
+              <span className="resource-crystal">
+                <span className="gem" style={{ background: RESOURCE_GEMS.energy }} />
+                {p.energy}
+              </span>
+              <span className="resource-crystal">
+                <span className="gem" style={{ background: RESOURCE_GEMS.bandwidth }} />
+                {p.bandwidth}
+              </span>
+              <span className="resource-crystal" style={{ color: 'var(--text-muted)' }}>
+                inc {p.incomePosition} &middot; {p.hand.length} krt
+              </span>
+            </div>
+          </div>
         </div>
       ))}
     </div>
@@ -482,7 +499,9 @@ function EraEndSummary({ state }: { state: GameState }) {
               }}
             >
               <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span className="player-dot" style={{ background: colorForPlayerIndex(i) }} />
+                <span className="player-portrait" style={{ background: colorForPlayerIndex(i), width: 22, height: 22, fontSize: '0.65rem' }}>
+                  {p.name.charAt(0).toUpperCase()}
+                </span>
                 {p.name}
               </span>
               <span style={{ fontFamily: 'var(--font-display)', color: 'var(--text-muted)' }}>

@@ -175,61 +175,111 @@ h3 {
   }
 }
 
-/* Stat ledger */
+/* Hand cards (MTG/Hearthstone-style card frames) */
 
-.stat-ledger {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
-  gap: 0.5rem;
+.hand-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  padding: 0.25rem 0.1rem 0.6rem;
 }
 
-.stat-chip {
-  background: var(--surface-raised);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 0.5rem 0.6rem;
+.game-card {
+  width: 92px;
+  aspect-ratio: 5 / 7;
+  flex-shrink: 0;
+  border-radius: 8px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 2px solid #c9a227;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.45);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+  position: relative;
 }
 
-.stat-chip.is-current {
-  border-color: var(--accent);
+.game-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 14px 24px rgba(0, 0, 0, 0.55);
+  z-index: 5;
 }
 
-.stat-chip .stat-label {
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-muted);
+.game-card-art {
+  flex: 1;
+  border-radius: 5px;
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  justify-content: center;
+  font-size: 26px;
+  background: rgba(0, 0, 0, 0.28);
 }
 
-.stat-chip .stat-value {
+.game-card-name {
   font-family: var(--font-display);
-  font-size: 1.1rem;
-  margin-top: 0.15rem;
+  font-size: 9px;
+  line-height: 1.2;
+  text-align: center;
+  color: #fff;
 }
 
-.player-dot {
-  width: 8px;
-  height: 8px;
+.game-card-type {
+  font-size: 7px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Resource crystals */
+
+.resource-row {
+  display: flex;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
+.resource-crystal {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+}
+
+.resource-crystal .gem {
+  width: 12px;
+  height: 12px;
+  transform: rotate(45deg);
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+}
+
+/* Player portrait badge */
+
+.player-portrait {
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #0b0e11;
+  border: 2px solid rgba(255, 255, 255, 0.35);
   flex-shrink: 0;
 }
 
-/* Cards / chips */
+/* Board frame texture */
 
-.card-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.25rem 0.6rem;
-  margin: 0.15rem;
-  border-radius: 999px;
-  font-size: 0.78rem;
-  font-weight: 500;
-  color: #0b0e11;
-  border: 1px solid rgba(0, 0, 0, 0.15);
+.board-frame {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  overflow: hidden;
 }
 
 /* Buttons */

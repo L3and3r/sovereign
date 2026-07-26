@@ -11,13 +11,14 @@ export function RegionNode({
   tileById: Map<string, IndustryTileInstance>;
 }) {
   return (
-    <g transform={`translate(${position.x}, ${position.y})`}>
+    <g transform={`translate(${position.x}, ${position.y})`} filter="url(#region-shadow)">
       <circle
         r={46}
-        fill="#1c232b"
-        stroke={region.hasBorderMarker ? '#e5484d' : '#3a4451'}
+        fill="url(#region-fill)"
+        stroke={region.hasBorderMarker ? '#e5484d' : '#4a5568'}
         strokeWidth={region.hasBorderMarker ? 3 : 1.5}
       />
+      <circle r={46} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={1} transform="translate(-1,-1)" />
       <text
         y={-54}
         textAnchor="middle"
